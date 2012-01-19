@@ -1,0 +1,29 @@
+Here are the parameters you can add in nagios.cfg:
+
+host=127.0.0.1
+port=5672
+userid=guest
+password=guest
+virtual_host=canopsis
+exchange_name=canopsis
+name=Central
+
+Example
+-------
+
+event_broker_options=-1
+broker_module=/opt/canopsis/opt/event-brokers/nagios/neb2amqp.o name=Central host=localhost exchange_name=canopsis
+
+TODO
+----
+
+- Add 'ip_address' field
+- Cleanup the code
+- Fix memory leaks
+- building routing-key
+  (<connector>.<connector_name>.<event_type>.<source_type>.<component>[.<resource>])
+
+Host:
+nagios.Central.check.component.localhost3
+Service:
+nagios.Central.check.resource.localhost3.PING
