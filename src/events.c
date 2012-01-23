@@ -52,7 +52,7 @@ event_program_status(int event_type __attribute__ ((__unused__)), void *data)
     	char buffer[AMQP_MSG_SIZE_MAX];
     	//TODO
     	//nebstruct_program_status_data_to_json(buffer, ps);
-        //amqp_main (hostname, port, exchange, routingkey, buffer);
+        //amqp_publish (exchange_name, routingkey, buffer);
     	g_last_event_program_status = (int)ps->timestamp.tv_sec;
     }
     
@@ -75,7 +75,7 @@ event_service_check(int event_type __attribute__ ((__unused__)), void *data)
                                           g_eventsource_name,
                                           c->host_name,
                                           c->service_description);
-        amqp_main (hostname, port, virtual_host, exchange_name, key, userid, password, buffer);
+        amqp_publish (exchange_name, key, buffer);
     }
 
     return 0;
@@ -95,7 +95,8 @@ event_host_check(int event_type __attribute__ ((__unused__)), void *data)
     	nebstruct_host_check_data_to_json(buffer, c);
         snprintf (key, AMQP_MSG_SIZE_MAX, "nagios.%s.check.component.%s",
                                           g_eventsource_name, c->host_name);
-        amqp_main (hostname, port, virtual_host, exchange_name, key, userid, password,buffer);
+
+        amqp_publish (exchange_name, key, buffer);
     }
 
     return 0;
@@ -114,7 +115,7 @@ event_acknowledgement(int event_type __attribute__ ((__unused__)), void *data)
     	char buffer[AMQP_MSG_SIZE_MAX];
     	//TODO
     	//nebstruct_acknowledgement_data_to_json(buffer, c);
-        //amqp_main (hostname, port, exchange, routingkey, buffer);
+        //amqp_publish (exchange_name, routingkey, buffer);
     	
     }
     else if (c->type == NEBTYPE_ACKNOWLEDGEMENT_REMOVE)
@@ -145,7 +146,7 @@ event_downtime(int event_type __attribute__ ((__unused__)), void *data)
     	char buffer[AMQP_MSG_SIZE_MAX];
     	//TODO
     	//nebstruct_downtime_data_to_json(buffer, c);
-        //amqp_main (hostname, port, exchange, routingkey, buffer);
+        //amqp_publish (exchange_name, routingkey, buffer);
     }
 
     return 0;
@@ -171,7 +172,7 @@ event_comment(int event_type __attribute__ ((__unused__)), void *data)
     	char buffer[AMQP_MSG_SIZE_MAX];
     	//TODO
     	//nebstruct_comment_data_to_json(buffer, c);
-        //amqp_main (hostname, port, exchange, routingkey, buffer);
+        //amqp_publish (exchange_name, routingkey, buffer);
     }
 
     return 0;

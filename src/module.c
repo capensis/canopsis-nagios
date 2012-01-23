@@ -97,6 +97,7 @@ nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *handle)
     else if (g_debug_level > 0)
         logger(LG_INFO, "Your event_broker_options are sufficient for NEB2Socket.");
 
+    amqp_connect(hostname, port, virtual_host, exchange_name, userid, password);
     register_callbacks();
 
     /* Unfortunately, we cannot start our socket thread right now.
@@ -116,6 +117,7 @@ int
 nebmodule_deinit(int flags __attribute__ ((__unused__)), int reason __attribute__ ((__unused__)))
 {
     logger(LG_INFO, "deinitializing");
+    amqp_disconnect();
     deregister_callbacks();
 //	terminate_threads();
     return 0;
