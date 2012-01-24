@@ -17,13 +17,7 @@ broker_module=/opt/canopsis/opt/event-brokers/nagios/neb2amqp.o name=Central hos
 TODO
 ----
 
-- Add 'ip_address' field
 - Cleanup the code
+- Use json lib
 - Fix memory leaks
-- building routing-key
-  (<connector>.<connector_name>.<event_type>.<source_type>.<component>[.<resource>])
 
-Host:
-nagios.Central.check.component.localhost3
-Service:
-nagios.Central.check.resource.localhost3.PING
