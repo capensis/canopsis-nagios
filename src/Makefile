@@ -21,7 +21,7 @@
 # Makefile for NEB2amqp
 ###################################
 
-INCLUDES=-I./librabbitmq -I../lib/ -I./
+INCLUDES=-I../lib/librabbitmq -I../lib/ -I./
 SRCPATH=src
 
 CC=gcc
@@ -30,7 +30,7 @@ CFLAGS=-g -O2 -DHAVE_CONFIG_H
 MOD_LDFLAGS=-shared -lstdc++
 #LDFLAGS=-L../lib/rabbitmq-c/librabbitmq/librabbitmq.la
 LDFLAGS=
-SOURCES=$(wildcard *.c librabbitmq/*.c)
+SOURCES=$(wildcard *.c ../lib/librabbitmq/*.c)
 LIBS=
 DBG_FLAGS=-DDEBUG=1
 
