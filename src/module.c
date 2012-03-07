@@ -97,7 +97,7 @@ NEB_API_VERSION (CURRENT_NEB_API_VERSION)
   parse_arguments (args);
 
   logger (LG_INFO, "NEB2amqp %s by Capensis.", VERSION);
-  logger (LG_INFO, "Please visit us at http://www.capensis.org/");
+  logger (LG_INFO, "Please visit us at http://www.canopsis.org/");
 
   if (!verify_event_broker_options ())
     {
