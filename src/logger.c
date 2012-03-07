@@ -32,7 +32,7 @@ void
 logger (int priority, const char *loginfo, ...)
 {
   char buffer[8192];
-  snprintf (buffer, 20, "neb2socket: ");
+  snprintf (buffer, 20, "neb2amqp: ");
 
   va_list ap;
   va_start (ap, loginfo);
