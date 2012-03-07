@@ -36,13 +36,13 @@ verify_event_broker_options ()
 	      BROKER_PROGRAM_STATE);
       errors++;
     }
-  if (!(event_broker_options & BROKER_TIMED_EVENTS))
+  /*if (!(event_broker_options & BROKER_TIMED_EVENTS))
     {
       logger (LG_CRIT,
 	      "need BROKER_TIMED_EVENTS (%i) event_broker_option enabled to work.",
 	      BROKER_TIMED_EVENTS);
       errors++;
-    }
+    }*/
   if (!(event_broker_options & BROKER_SERVICE_CHECKS))
     {
       logger (LG_CRIT,
@@ -57,13 +57,13 @@ verify_event_broker_options ()
 	      BROKER_HOST_CHECKS);
       errors++;
     }
-  if (!(event_broker_options & BROKER_LOGGED_DATA))
+  /*if (!(event_broker_options & BROKER_LOGGED_DATA))
     {
       logger (LG_CRIT,
 	      "need BROKER_LOGGED_DATA (%i) event_broker_option enabled to work.",
 	      BROKER_LOGGED_DATA);
       errors++;
-    }
+    }*/
   if (!(event_broker_options & BROKER_COMMENT_DATA))
     {
       logger (LG_CRIT,
@@ -85,27 +85,27 @@ verify_event_broker_options ()
 	      BROKER_STATUS_DATA);
       errors++;
     }
-  if (!(event_broker_options & BROKER_ADAPTIVE_DATA))
+  /*if (!(event_broker_options & BROKER_ADAPTIVE_DATA))
     {
       logger (LG_CRIT,
 	      "need BROKER_ADAPTIVE_DATA (%i) event_broker_option enabled to work.",
 	      BROKER_ADAPTIVE_DATA);
       errors++;
-    }
-  if (!(event_broker_options & BROKER_EXTERNALCOMMAND_DATA))
+    }*/
+  /*if (!(event_broker_options & BROKER_EXTERNALCOMMAND_DATA))
     {
       logger (LG_CRIT,
 	      "need BROKER_EXTERNALCOMMAND_DATA (%i) event_broker_option enabled to work.",
 	      BROKER_EXTERNALCOMMAND_DATA);
       errors++;
-    }
-  if (!(event_broker_options & BROKER_STATECHANGE_DATA))
+    }*/
+  /*if (!(event_broker_options & BROKER_STATECHANGE_DATA))
     {
       logger (LG_CRIT,
 	      "need BROKER_STATECHANGE_DATA (%i) event_broker_option enabled to work.",
 	      BROKER_STATECHANGE_DATA);
       errors++;
-    }
+    }*/
 
   return errors == 0;
 }
