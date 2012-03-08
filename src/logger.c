@@ -40,13 +40,4 @@ logger (int priority, const char *loginfo, ...)
 	     loginfo, ap);
   va_end (ap);
   write_to_all_logs (buffer, priority);
-
-  /* DEBUGING
-     FILE *x = fopen("/tmp/hirn.log", "a+");
-     va_start(ap, loginfo);
-     vfprintf(x, loginfo, ap);
-     fputc('\n', x);
-     va_end(ap);
-     fclose(x);
-   */
 }

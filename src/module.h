@@ -24,9 +24,22 @@
 #define TRUE 1
 
 int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, void *handle);
-void terminate_threads();
-void start_threads();
 int nebmodule_deinit(int flags __attribute__ ((__unused__)), int reason __attribute__ ((__unused__)));
-void *main_thread(void *data __attribute__ ((__unused__)));
+
+struct options {
+	char *hostname;
+	int port;
+	char *userid;
+	char *password;
+	char *virtual_host;
+	char *exchange_name;
+	char *routing_key;
+	char *eventsource_name;
+
+	int log_level;
+	
+	void * nagios_handle;
+};
+
 
 #endif

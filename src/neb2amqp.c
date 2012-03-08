@@ -31,16 +31,11 @@
 #include <amqp_private.h>
 
 #include "neb2amqp.h"
+
+#include "module.h"
 #include "logger.h"
 
-extern char *hostname;
-extern int port;
-extern char *userid;
-extern char *password;
-extern char *virtual_host;
-extern char *exchange_name;
-extern char *routing_key;
-extern char *g_eventsource_name;
+extern struct options g_options;
 
 int sockfd;
 bool amqp_connected;
@@ -121,10 +116,7 @@ on_amqp_error (amqp_rpc_reply_t x, char const *context)
 
 
 void
-amqp_connect (const char *hostname,
-	      int port,
-	      const char *vhost,
-	      const char *exchange, const char *userid, const char *password)
+amqp_connect (void)
 {
   amqp_errors = false;
 
@@ -145,16 +137,14 @@ amqp_connect (const char *hostname,
       conn = amqp_new_connection ();
 
       logger (LG_INFO, "AMQP: Opening socket");
-      on_error (sockfd = amqp_open_socket (hostname, port), "Opening socket");
+      on_error (sockfd = amqp_open_socket (g_options.hostname, g_options.port), "Opening socket");
 
       if (!amqp_errors)
 	{
 	  amqp_set_sockfd (conn, sockfd);
 
 	  logger (LG_INFO, "AMQP: Logging");
-	  on_amqp_error (amqp_login
-			 (conn, vhost, 0, 131072, 0, AMQP_SASL_METHOD_PLAIN,
-			  userid, password), "Logging in");
+	  on_amqp_error (amqp_login(conn, g_options.virtual_host, 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, g_options.userid, g_options.password), "Logging in");
 	}
 
       if (!amqp_errors)
@@ -176,7 +166,7 @@ amqp_connect (const char *hostname,
 }
 
 void
-amqp_disconnect ()
+amqp_disconnect (void)
 {
   if (amqp_connected)
     {
@@ -201,8 +191,7 @@ amqp_disconnect ()
 }
 
 void
-amqp_publish (const char *exchange,
-	      const char *routingkey, const char *message)
+amqp_publish (const char *routingkey, const char *message)
 {
 
   if (amqp_connected)
@@ -216,7 +205,7 @@ amqp_publish (const char *exchange,
 
       on_error (amqp_basic_publish (conn,
 				    1,
-				    amqp_cstring_bytes (exchange),
+				    amqp_cstring_bytes (g_options.exchange_name),
 				    amqp_cstring_bytes (routingkey),
 				    0,
 				    0,
@@ -226,19 +215,17 @@ amqp_publish (const char *exchange,
 
 
       if (amqp_errors)
-	{
-	  //TODO: re-queue event
-	  logger (LG_INFO, "AMQP: Error on publish");
-	  amqp_disconnect ();
-	  logger (LG_INFO, "AMQP: Try to reconnect ...");
-	  amqp_connect (hostname, port, virtual_host, exchange_name, userid,
-			password);
-	}
+		{
+		//TODO: re-queue event
+		logger (LG_INFO, "AMQP: Error on publish");
+		amqp_disconnect ();
+		logger (LG_INFO, "AMQP: Try to reconnect ...");
+		amqp_connect ();
+		}
     }
   else
     {
-      amqp_connect (hostname, port, virtual_host, exchange_name, userid,
-		    password);
+      amqp_connect ();
     }
 
 }

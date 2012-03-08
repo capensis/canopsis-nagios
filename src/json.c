@@ -21,7 +21,7 @@
 #include "module.h"
 #include "logger.h"
 
-extern char *g_eventsource_name;
+extern struct options g_options;
 
 char *
 charnull (char *data)
@@ -61,7 +61,7 @@ nebstruct_service_check_data_to_json (char *buffer,
 \"execution_time\":	%.3lf, \
 \"latency\":		%.3lf, \
 \"command_name\":	\"%s\" \
-}\n", g_eventsource_name, c->host_name, host_object->address, c->service_description, (int) c->timestamp.tv_sec, c->state, c->state_type, charnull (c->output), charnull (c->long_output), charnull (c->perf_data), c->check_type, c->current_attempt, c->max_attempts, c->execution_time, c->latency, charnull (c->command_name));
+}\n", g_options.eventsource_name, c->host_name, host_object->address, c->service_description, (int) c->timestamp.tv_sec, c->state, c->state_type, charnull (c->output), charnull (c->long_output), charnull (c->perf_data), c->check_type, c->current_attempt, c->max_attempts, c->execution_time, c->latency, charnull (c->command_name));
 }
 
 void
@@ -99,5 +99,5 @@ nebstruct_host_check_data_to_json (char *buffer,
 \"execution_time\":	%.3lf,\
 \"latency\":		%.3lf,\
 \"command_name\":	\"%s\"\
-}\n", g_eventsource_name, c->host_name, host_object->address, (int) c->timestamp.tv_sec, state, c->state_type, charnull (c->output), charnull (c->long_output), charnull (c->perf_data), c->check_type, c->current_attempt, c->max_attempts, c->execution_time, c->latency, charnull (c->command_name));
+}\n", g_options.eventsource_name, c->host_name, host_object->address, (int) c->timestamp.tv_sec, state, c->state_type, charnull (c->output), charnull (c->long_output), charnull (c->perf_data), c->check_type, c->current_attempt, c->max_attempts, c->execution_time, c->latency, charnull (c->command_name));
 }
