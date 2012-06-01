@@ -21,6 +21,8 @@
 #include "module.h"
 #include "logger.h"
 
+#include "jansson.h"
+
 extern struct options g_options;
 
 char *
@@ -41,27 +43,35 @@ nebstruct_service_check_data_to_json (char *buffer,
   service *service_object = c->object_ptr;
   host *host_object = service_object->host_ptr;
 
-  sprintf (buffer, "{\
-\"connector\":		 \"nagios\",\
-\"connector_name\":	 \"%s\",\
-\"event_type\":		 \"check\",\
-\"source_type\":	 \"resource\",\
-\"component\":		 \"%s\",\
-\"address\":		 \"%s\",\
-\"resource\":		 \"%s\",\
-\"timestamp\":		 %d,\
-\"state\":		 %d,\
-\"state_type\":		 %d,\
-\"output\":		 \"%s\",\
-\"long_output\":	 \"%s\",\
-\"perf_data\":		 \"%s\",\
-\"check_type\":		 %d,\
-\"current_attempt\":	%d,\
-\"max_attempts\":	%d, \
-\"execution_time\":	%.3lf, \
-\"latency\":		%.3lf, \
-\"command_name\":	\"%s\" \
-}\n", g_options.eventsource_name, c->host_name, host_object->address, c->service_description, (int) c->timestamp.tv_sec, c->state, c->state_type, charnull (c->output), charnull (c->long_output), charnull (c->perf_data), c->check_type, c->current_attempt, c->max_attempts, c->execution_time, c->latency, charnull (c->command_name));
+  json_t* jdata;
+  jdata = json_object();
+  
+  json_object_set(jdata, "connector",		json_string("nagios"));
+  json_object_set(jdata, "connector_name",	json_string(g_options.eventsource_name));
+  json_object_set(jdata, "event_type",		json_string("check"));
+  json_object_set(jdata, "source_type",		json_string("resource"));
+  json_object_set(jdata, "component",		json_string(c->host_name));
+  json_object_set(jdata, "address",			json_string(host_object->address));
+  json_object_set(jdata, "resource",		json_string(c->service_description));
+  json_object_set(jdata, "timestamp", 		json_integer((int) c->timestamp.tv_sec));
+  json_object_set(jdata, "state",			json_integer(c->state));
+  json_object_set(jdata, "state_type",		json_integer(c->state_type));
+  json_object_set(jdata, "output",			json_string(c->output));
+  json_object_set(jdata, "long_output",		json_string(c->long_output));
+  json_object_set(jdata, "perf_data",		json_string(c->perf_data));
+  json_object_set(jdata, "check_type",		json_integer(c->check_type));
+  json_object_set(jdata, "current_attempt",	json_integer(c->current_attempt));
+  json_object_set(jdata, "max_attempts",	json_integer(c->max_attempts));
+  json_object_set(jdata, "execution_time",	json_real(c->execution_time));
+  json_object_set(jdata, "latency",			json_real(c->latency));
+  json_object_set(jdata, "command_name",	json_string(c->command_name));
+  
+  char* event_string = json_dumps( jdata, 0 );
+  sprintf (buffer, "%s", event_string);
+  
+  free(event_string);
+  json_decref(jdata); 
+
 }
 
 void
@@ -79,25 +89,33 @@ nebstruct_host_check_data_to_json (char *buffer,
       state = 2;
     }
 
-  sprintf (buffer, "{\
-\"connector\":		 \"nagios\",\
-\"connector_name\":	 \"%s\",\
-\"event_type\":		 \"check\",\
-\"source_type\":	 \"component\",\
-\"component\":		 \"%s\",\
-\"address\":		 \"%s\",\
-\"resource\":		 \"\",\
-\"timestamp\":		 %d,\
-\"state\":		 %d,\
-\"state_type\":		 %d,\
-\"output\":		 \"%s\",\
-\"long_output\":	 \"%s\",\
-\"perf_data\":		 \"%s\",\
-\"check_type\":		 %d,\
-\"current_attempt\":	%d,\
-\"max_attempts\":	%d,\
-\"execution_time\":	%.3lf,\
-\"latency\":		%.3lf,\
-\"command_name\":	\"%s\"\
-}\n", g_options.eventsource_name, c->host_name, host_object->address, (int) c->timestamp.tv_sec, state, c->state_type, charnull (c->output), charnull (c->long_output), charnull (c->perf_data), c->check_type, c->current_attempt, c->max_attempts, c->execution_time, c->latency, charnull (c->command_name));
+  json_t* jdata;
+  jdata = json_object();
+  
+  json_object_set(jdata, "connector",		json_string("nagios"));
+  json_object_set(jdata, "connector_name",	json_string(g_options.eventsource_name));
+  json_object_set(jdata, "event_type",		json_string("check"));
+  json_object_set(jdata, "source_type",		json_string("component"));
+  json_object_set(jdata, "component",		json_string(c->host_name));
+  json_object_set(jdata, "address",			json_string(host_object->address));
+  json_object_set(jdata, "resource",		json_string(""));
+  json_object_set(jdata, "timestamp", 		json_integer((int) c->timestamp.tv_sec));
+  json_object_set(jdata, "state",			json_integer(c->state));
+  json_object_set(jdata, "state_type",		json_integer(c->state_type));
+  json_object_set(jdata, "output",			json_string(c->output));
+  json_object_set(jdata, "long_output",		json_string(c->long_output));
+  json_object_set(jdata, "perf_data",		json_string(c->perf_data));
+  json_object_set(jdata, "check_type",		json_integer(c->check_type));
+  json_object_set(jdata, "current_attempt",	json_integer(c->current_attempt));
+  json_object_set(jdata, "max_attempts",	json_integer(c->max_attempts));
+  json_object_set(jdata, "execution_time",	json_real(c->execution_time));
+  json_object_set(jdata, "latency",			json_real(c->latency));
+  json_object_set(jdata, "command_name",	json_string(c->command_name));
+  
+  char* event_string = json_dumps( jdata, 0 );
+  sprintf (buffer, "%s", event_string);
+  
+  free(event_string);
+  json_decref(jdata); 
+
 }
