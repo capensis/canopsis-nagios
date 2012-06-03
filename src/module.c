@@ -80,9 +80,8 @@ nebmodule_deinit (int flags __attribute__ ((__unused__)), int reason
 {
   logger (LG_INFO, "deinitializing");
   
-  amqp_disconnect ();
-  
   deregister_callbacks ();
+  amqp_disconnect ();
   
   return 0;
 }
