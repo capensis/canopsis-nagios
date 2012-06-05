@@ -44,7 +44,7 @@ event_service_check (int event_type __attribute__ ((__unused__)), void *data)
       
       nebstruct_service_check_data_to_json (buffer, c);
       
-      snprintf (key, AMQP_MSG_SIZE_MAX, "nagios.%s.check.resource.%s.%s", g_options.eventsource_name, c->host_name, c->service_description);
+      snprintf (key, AMQP_MSG_SIZE_MAX, "%s.%s.check.resource.%s.%s", g_options.connector, g_options.eventsource_name, c->host_name, c->service_description);
 
       amqp_publish (key, buffer);
     }
@@ -66,7 +66,7 @@ event_host_check (int event_type __attribute__ ((__unused__)), void *data)
       
       nebstruct_host_check_data_to_json (buffer, c);
       
-      snprintf (key, AMQP_MSG_SIZE_MAX, "nagios.%s.check.component.%s", g_options.eventsource_name, c->host_name);
+      snprintf (key, AMQP_MSG_SIZE_MAX, "%s.%s.check.component.%s", g_options.connector, g_options.eventsource_name, c->host_name);
 
       amqp_publish (key, buffer);
     }

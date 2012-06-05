@@ -34,9 +34,10 @@ struct options g_options;
 
 void parse_arguments (const char *args_orig);
 
+
 /* this function gets called when the module is loaded by the event broker */
 int
-nebmodule_init (int flags __attribute__ ((__unused__)), char *args, void *handle)
+nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *handle)
 {
   // Set Nagios handle
   g_options.nagios_handle = handle;
@@ -49,14 +50,15 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, void *handle
   g_options.password = "guest";
   g_options.virtual_host = "canopsis";
   g_options.exchange_name = "canopsis.events";
-  g_options.routing_key = "secret";
   g_options.log_level = 0;
+  g_options.connector = "nagios";
 
   // Parse module options
   parse_arguments (args);
 
   // Init module
-  logger (LG_INFO, "NEB2amqp %s by Capensis.", VERSION);
+  //logger (LG_INFO, handle.info);
+  logger (LG_INFO, "NEB2amqp %s by Capensis. (connector: %s)", VERSION, g_options.connector);
   logger (LG_INFO, "Please visit us at http://www.canopsis.org/");
 
   if (! verify_event_broker_options ()) {
@@ -153,10 +155,10 @@ parse_arguments (const char *args_orig)
 	      g_options.exchange_name = right;
 	      logger (LG_DEBUG, "Setting exchange_name to %s", g_options.exchange_name);
 	    }
-	  else if (strcmp (left, "routing_key") == 0)
+	  else if (strcmp (left, "connector") == 0)
 	    {
-	      g_options.routing_key = right;
-	      logger (LG_DEBUG, "Setting routing_key to %s", g_options.routing_key);
+	      g_options.connector = right;
+	      logger (LG_DEBUG, "Setting connector to %s", g_options.connector);
 	    }
 	  else if (strcmp (left, "port") == 0)
 	    {
