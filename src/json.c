@@ -46,7 +46,7 @@ nebstruct_service_check_data_to_json (char *buffer,
   json_t* jdata;
   jdata = json_object();
   
-  json_object_set(jdata, "connector",		json_string("nagios"));
+  json_object_set(jdata, "connector",		json_string(g_options.connector));
   json_object_set(jdata, "connector_name",	json_string(g_options.eventsource_name));
   json_object_set(jdata, "event_type",		json_string("check"));
   json_object_set(jdata, "source_type",		json_string("resource"));
@@ -92,7 +92,7 @@ nebstruct_host_check_data_to_json (char *buffer,
   json_t* jdata;
   jdata = json_object();
   
-  json_object_set(jdata, "connector",		json_string("nagios"));
+  json_object_set(jdata, "connector",		json_string(g_options.connector));
   json_object_set(jdata, "connector_name",	json_string(g_options.eventsource_name));
   json_object_set(jdata, "event_type",		json_string("check"));
   json_object_set(jdata, "source_type",		json_string("component"));
