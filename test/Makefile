@@ -29,7 +29,7 @@ LDFLAGS=
 LIBS=
 
 BROKERLIBS=-ldl
-BROKER_LDFLAGS=-Wall -rdynamic -lm
+BROKER_LDFLAGS=-Wall -rdynamic -lltdl
 
 DBG_FLAGS=-DDEBUG=1
 #gcc -Wall -g -O2 -DHAVE_CONFIG_H -o test test.c -Wl,-export-dynamic  -lltdl  -I../lib/ -I../src/ -I./
