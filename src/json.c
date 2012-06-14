@@ -57,7 +57,7 @@ nebstruct_service_check_data_to_json (char *buffer,
   json_t* timestamp			= json_integer((int) c->timestamp.tv_sec);
   json_t* state				= json_integer(c->state);
   json_t* state_type		= json_integer(c->state_type);
-  json_t* output			= json_string(c->long_output);
+  json_t* output			= json_string(c->output);
   json_t* long_output		= json_string(c->long_output);
   json_t* perf_data			= json_string(c->perf_data);
   json_t* check_type		= json_integer(c->check_type);
@@ -141,7 +141,7 @@ nebstruct_host_check_data_to_json (char *buffer,
   json_t* timestamp			= json_integer((int) c->timestamp.tv_sec);
   json_t* state				= json_integer(cstate);
   json_t* state_type		= json_integer(c->state_type);
-  json_t* output			= json_string(c->long_output);
+  json_t* output			= json_string(c->output);
   json_t* long_output		= json_string(c->long_output);
   json_t* perf_data			= json_string(c->perf_data);
   json_t* check_type		= json_integer(c->check_type);
