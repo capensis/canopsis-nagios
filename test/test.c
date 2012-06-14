@@ -133,6 +133,7 @@ int main (void)
 	initfunc=module->init_func;
 	result=(*initfunc)(NEBMODULE_NORMAL_LOAD, module->args, module->module_handle);
 
+	sleep(1);
 	/// Do it !
 	printf("\nPlay with NEB ...\n");
 	
@@ -140,9 +141,9 @@ int main (void)
 	
 	check1 = build_service_check("host1", "service1", "mon output1");
 	service_check_data(NEBCALLBACK_SERVICE_CHECK_DATA, (void *)&check1);
-	sleep(5);
-
+	
 	/// End !
+	sleep(1);
 	
 	printf("\ndeInit NEB ...\n");
 	int (*deinitfunc)(int, int);
