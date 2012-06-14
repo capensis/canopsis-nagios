@@ -23,7 +23,8 @@
 
 INCLUDES=-I../lib/ -I../src/ -I./
 CC=gcc
-CFLAGS=-Wall -g -O2 -DHAVE_CONFIG_H
+#CFLAGS=-Wall -g -O2 -DHAVE_CONFIG_H
+CFLAGS=-Wall -g -O0 -DHAVE_CONFIG_H
 
 LDFLAGS=
 LIBS=
