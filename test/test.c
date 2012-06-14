@@ -137,11 +137,16 @@ int main (void)
 	/// Do it !
 	printf("\nPlay with NEB ...\n");
 	
+
 	nebstruct_service_check_data check1;
-	
 	check1 = build_service_check("host1", "service1", "mon output1");
-	service_check_data(NEBCALLBACK_SERVICE_CHECK_DATA, (void *)&check1);
 	
+	int i=0;
+	for (i=1; i<1000; i++) {
+		service_check_data(NEBCALLBACK_SERVICE_CHECK_DATA, (void *)&check1);
+		sleep(0.5);
+	}
+	printf("+ %i events sended\n", i);
 	/// End !
 	sleep(1);
 	
