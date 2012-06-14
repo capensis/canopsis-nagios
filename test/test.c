@@ -151,7 +151,7 @@ int main (void)
 	result=(*deinitfunc)(0, NEBMODULE_FORCE_UNLOAD);
 
 	printf("Unload module\n");
-	lt_dlclose(module->module_handle);
+	result = lt_dlclose(module->module_handle);
 	if(result)
 		return ERROR;
 	printf(" + Ok\n");
@@ -172,3 +172,23 @@ int main (void)
 	printf("Bye Bye\n");
 	return 0;
 }
+
+/*
+==24438== HEAP SUMMARY:
+==24438==     in use at exit: 5,278 bytes in 20 blocks
+==24438==   total heap usage: 75 allocs, 55 frees, 928,637 bytes allocated
+==24438== 
+==24438== 21 bytes in 1 blocks are definitely lost in loss record 1 of 8
+==24438==    at 0x4026864: malloc (vg_replace_malloc.c:236)
+==24438==    by 0x40C5D1F: strdup (strdup.c:43)
+==24438==    by 0x45B8BC6: ???
+==24438==    by 0x45B901F: ???
+==24438==    by 0x8048CCF: main (test.c:134)
+==24438== 
+==24414== LEAK SUMMARY:
+==24414==    definitely lost: 21 bytes in 1 blocks
+==24414==    indirectly lost: 0 bytes in 0 blocks
+==24414==      possibly lost: 0 bytes in 0 blocks
+==24414==    still reachable: 5,257 bytes in 19 blocks
+==24414==         suppressed: 0 bytes in 0 blocks
+*/
