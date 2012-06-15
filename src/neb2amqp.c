@@ -198,21 +198,20 @@ amqp_publish (const char *routingkey, const char *message)
     {
 
       amqp_basic_properties_t props;
-      props._flags =
-	AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
+      props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
       props.content_type = amqp_cstring_bytes ("application/json");
       props.delivery_mode = 2;	/* persistent delivery mode */
-
-      on_error (amqp_basic_publish (conn,
+      
+     int result = amqp_basic_publish (conn,
 				    1,
 				    amqp_cstring_bytes (g_options.exchange_name),
 				    amqp_cstring_bytes (routingkey),
 				    0,
 				    0,
 				    &props,
-				    amqp_cstring_bytes (message)),
-		"Publishing");
-
+				    amqp_cstring_bytes (message));
+				    
+      on_error (result, "Publishing");
 
       if (amqp_errors)
 		{
