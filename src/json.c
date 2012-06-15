@@ -60,7 +60,7 @@ nebstruct_service_check_data_to_json (char *buffer,
   json_object_set(jdata, "event_type", item);
   json_decref(item);
   
-  item = json_string("resource"); 
+  item = json_string("component"); 
   json_object_set(jdata, "source_type",	item);
   json_decref(item);
   
