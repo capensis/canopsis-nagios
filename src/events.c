@@ -40,13 +40,24 @@ event_service_check (int event_type __attribute__ ((__unused__)), void *data)
     {
       //logger(LG_DEBUG, "SERVICECHECK_PROCESSED: %s->%s", c->host_name, c->service_description);
 
-      char buffer[AMQP_MSG_SIZE_MAX], key[AMQP_MSG_SIZE_MAX];
+      char *buffer = NULL, *key = NULL;
       
-      nebstruct_service_check_data_to_json (buffer, c);
+      size_t l = strlen (g_options.connector) +
+                 strlen (g_options.eventsource_name) +
+                 strlen (c->host_name) +
+                 strlen (c->service_description) + 19; // "..check.ressource.." + \0 = 19 chars
+
+      nebstruct_service_check_data_to_json (&buffer, c);
+
+      xalloca (key, xmin (g_options.max_size, (int) l) * sizeof (char));
       
-      snprintf (key, AMQP_MSG_SIZE_MAX, "%s.%s.check.resource.%s.%s", g_options.connector, g_options.eventsource_name, c->host_name, c->service_description);
+      snprintf (key, xmin (g_options.max_size, (int) l), "%s.%s.check.resource.%s.%s", g_options.connector, g_options.eventsource_name, c->host_name, c->service_description);
 
       amqp_publish (key, buffer);
+
+      // We MUST NOT free key because it is stored in the heap!
+
+      xfree (buffer);
     }
 
   return 0;
@@ -62,13 +73,22 @@ event_host_check (int event_type __attribute__ ((__unused__)), void *data)
     {
       //logger(LG_DEBUG, "HOSTCHECK_PROCESSED: %s", c->host_name);
 
-      char buffer[AMQP_MSG_SIZE_MAX], key[AMQP_MSG_SIZE_MAX];
+      char *buffer = NULL, *key = NULL;
+
+      size_t l = xstrlen (g_options.connector) +
+                 xstrlen (g_options.eventsource_name) +
+                 xstrlen (c->host_name) +
+                 20;
       
-      nebstruct_host_check_data_to_json (buffer, c);
+      nebstruct_host_check_data_to_json (&buffer, c);
+
+      xalloca (key, xmin (g_options.max_size, (int) l) * sizeof (char));
       
-      snprintf (key, AMQP_MSG_SIZE_MAX, "%s.%s.check.component.%s", g_options.connector, g_options.eventsource_name, c->host_name);
+      snprintf (key, xmin (g_options.max_size, (int) l), "%s.%s.check.component.%s", g_options.connector, g_options.eventsource_name, c->host_name);
 
       amqp_publish (key, buffer);
+
+      xfree (buffer);
     }
 
   return 0;

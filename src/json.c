@@ -22,6 +22,7 @@
 #include "logger.h"
 
 #include "jansson.h"
+#include "xutils.h"
 
 extern struct options g_options;
 
@@ -36,7 +37,7 @@ charnull (char *data)
 }
 
 void
-nebstruct_service_check_data_to_json (char *buffer,
+nebstruct_service_check_data_to_json (char **buffer,
 				      nebstruct_service_check_data * c)
 {
 
@@ -50,10 +51,10 @@ nebstruct_service_check_data_to_json (char *buffer,
  
   item = json_string(g_options.connector);
   json_object_set(jdata, "connector", item);
-  json_decref(item );
+  json_decref(item);
   
   item = json_string(g_options.eventsource_name);
-  json_object_set(jdata, "connector_name",	item);
+  json_object_set(jdata, "connector_name", item);
   json_decref(item);
   
   item = json_string("check");
@@ -65,7 +66,7 @@ nebstruct_service_check_data_to_json (char *buffer,
   json_decref(item);
   
   item = json_string(c->host_name);
-  json_object_set(jdata, "component",	item);
+  json_object_set(jdata, "component", item);
   json_decref(item);
   
   //item = json_string(host_object->address);
@@ -73,23 +74,23 @@ nebstruct_service_check_data_to_json (char *buffer,
   //json_decref(item);
   
   item = json_string(c->service_description);
-  json_object_set(jdata, "resource",	item);
+  json_object_set(jdata, "resource", item);
   json_decref(item);
   
   item = json_integer((int) c->timestamp.tv_sec);
-  json_object_set(jdata, "timestamp", 	item);
+  json_object_set(jdata, "timestamp", item);
   json_decref(item);
   
   item = json_integer(c->state);
-  json_object_set(jdata, "state",	item);
+  json_object_set(jdata, "state", item);
   json_decref(item);
   
   item = json_integer(c->state_type);
-  json_object_set(jdata, "state_type",	item);
+  json_object_set(jdata, "state_type", item);
   json_decref(item);
   
   item = json_string(c->output);
-  json_object_set(jdata, "output",	item);
+  json_object_set(jdata, "output", item);
   json_decref(item);
   
   item = json_string(c->long_output); 
@@ -125,15 +126,45 @@ nebstruct_service_check_data_to_json (char *buffer,
   json_decref(item);
   
   char * json = json_dumps( jdata, 0 );
-  sprintf (buffer, "%s", json);
-  free(json);
+  size_t ref = xstrlen (json);
+
+  if ((int) ref > g_options.max_size)
+    {
+      size_t save = ref - g_options.max_size;
+      if (save >= xstrlen (c->long_output))
+        {
+          item = json_string("");
+          json_object_set(jdata, "long_output", item);
+          json_decref(item);
+        }
+      else if (save >= xstrlen (c->output))
+        {
+          item = json_string("");
+          json_object_set(jdata, "output", item);
+          json_decref(item);
+        }
+      else if (save >= xstrlen (c->perf_data))
+        {
+          item = json_string("");
+          json_object_set(jdata, "perf_data", item);
+          json_decref(item);
+        }
+
+      xfree (json);
+      json = json_dumps( jdata, 0 );
+    }
+
+  ref = xstrlen (json);
+  *buffer = xmalloc (ref + 1);
+
+  snprintf (*buffer, ref+1, "%s", json);
+  xfree(json);
   
   json_decref(jdata);
-
 }
 
 void
-nebstruct_host_check_data_to_json (char *buffer,
+nebstruct_host_check_data_to_json (char **buffer,
 				   nebstruct_host_check_data * c)
 {
 
@@ -155,7 +186,7 @@ nebstruct_host_check_data_to_json (char *buffer,
   json_decref(item );
   
   item = json_string(g_options.eventsource_name);
-  json_object_set(jdata, "connector_name",	item);
+  json_object_set(jdata, "connector_name", item);
   json_decref(item);
   
   item = json_string("check");
@@ -167,7 +198,7 @@ nebstruct_host_check_data_to_json (char *buffer,
   json_decref(item);
   
   item = json_string(c->host_name);
-  json_object_set(jdata, "component",	item);
+  json_object_set(jdata, "component", item);
   json_decref(item);
   
   //item = json_string(host_object->address);
@@ -175,19 +206,19 @@ nebstruct_host_check_data_to_json (char *buffer,
   //json_decref(item);
   
   item = json_integer((int) c->timestamp.tv_sec);
-  json_object_set(jdata, "timestamp", 	item);
+  json_object_set(jdata, "timestamp", item);
   json_decref(item);
   
   item = json_integer(cstate);
-  json_object_set(jdata, "state",	item);
+  json_object_set(jdata, "state", item);
   json_decref(item);
   
   item = json_integer(c->state_type);
-  json_object_set(jdata, "state_type",	item);
+  json_object_set(jdata, "state_type", item);
   json_decref(item);
   
   item = json_string(c->output);
-  json_object_set(jdata, "output",	item);
+  json_object_set(jdata, "output", item);
   json_decref(item);
   
   item = json_string(c->long_output); 
@@ -223,9 +254,40 @@ nebstruct_host_check_data_to_json (char *buffer,
   json_decref(item);
   
   char * json = json_dumps( jdata, 0 );
-  sprintf (buffer, "%s", json);
-  free(json);
+    size_t ref = xstrlen (json);
+
+  if ((int) ref > g_options.max_size)
+    {   
+      size_t save = ref - g_options.max_size;
+      if (save >= xstrlen (c->long_output))
+        {   
+          item = json_string("");
+          json_object_set(jdata, "long_output", item);
+          json_decref(item);
+        }   
+      else if (save >= xstrlen (c->output))
+        {   
+          item = json_string("");
+          json_object_set(jdata, "output", item);
+          json_decref(item);
+        }   
+      else if (save >= xstrlen (c->perf_data))
+        {   
+          item = json_string("");
+          json_object_set(jdata, "perf_data", item);
+          json_decref(item);
+        }   
+
+      xfree (json);
+      json = json_dumps( jdata, 0 );
+    }   
+
+  ref = xstrlen (json);
+  *buffer = xmalloc (ref + 1); 
+
+  snprintf (*buffer, ref+1, "%s", json);
+  
+  xfree(json);
   
   json_decref(jdata);
-
 }

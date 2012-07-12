@@ -42,5 +42,72 @@ extern "C" {
 }
 #endif
 
+/* 
+ * these functions are part of the shelldone project developped by Benjamin
+ * "Ziirish" Sans under the BSD licence
+ */
+
+/* hate to do that, but I don't have the choice because of my alloca macro */
+#include <err.h>
+#include <alloca.h>
+
+/**
+* Returns the smallest value of the given parameters
+* @param a Value to compare
+* @param b Value to compare
+* @return Smallest value between a and b
+*/
+int xmin (int a, int b);
+
+/**
+* Returns the biggest value of the given parameters
+* @param a Value to compare
+* @param b Value to compare
+* @return Biggest value between a and b
+*/
+int xmax (int a, int b);
+
+/**
+* Frees the memory used by the given pointer
+* @param ptr Pointer to free. If NULL the function returns
+*/
+void xfree (void *ptr);
+
+/**
+* Allocates memory or exit and display an error
+* @param size Requested size to allocate
+* @return The address pointing to the memory-space
+*/
+void *xmalloc (size_t size);
+
+/**
+* Allocates temporary memory or exit and display an error
+* @param size Requested size to allocate
+*/
+/**
+* alloca() is allocated within the stack frame, that space is automatically
+* freed if the function returns. that is the reason why we use a macro here
+*/
+#define xalloca(ret,size) \
+do{ \
+  ret = alloca (size); \
+  if (ret == NULL) \
+    err (2, "xalloca can not allocate %lu bytes",(u_long) size); \
+}while(0)
+
+/**
+* Duplicates a string
+* @param dup String to copy
+* @return A pointer to a copy of the given string
+*/
+char *xstrdup (const char *dup);
+
+/**
+* Gives the size of a string
+* @param src String we want the size of
+* @return Size of src, 0 if NULL
+*/
+size_t xstrlen (const char *src);
+
 #endif // strutil_h
 

@@ -29,14 +29,15 @@ int nebmodule_init(int flags __attribute__ ((__unused__)), char *args, nebmodule
 int nebmodule_deinit(int flags __attribute__ ((__unused__)), int reason __attribute__ ((__unused__)));
 
 struct options {
-	char *hostname;
-	int port;
-	char *userid;
-	char *password;
-	char *virtual_host;
-	char *exchange_name;
-	char *connector;
-	char *eventsource_name;
+	char    *hostname;
+	int     port;
+	char    *userid;
+	char    *password;
+	char    *virtual_host;
+	char    *exchange_name;
+	char    *connector;
+	char    *eventsource_name;
+    int     max_size;
 
 	int log_level;
 	

@@ -22,10 +22,12 @@
 // to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <limits.h>
 
-#include "strutil.h"
+#include "xutils.h"
 
 void
 rstrip (char *c)
@@ -95,4 +97,69 @@ next_token (char **c, char delim)
   else
     *c = end;
   return begin;
+}
+
+/* 
+ * these functions are part of the shelldone project developped by Benjamin
+ * "Ziirish" Sans under the BSD licence
+ */
+
+int
+xmin (int a, int b)
+{
+  return a < b ? a : b;
+}
+
+int
+xmax (int a, int b)
+{
+  return a > b ? a : b;
+}
+
+void
+xfree (void *ptr)
+{
+  if (ptr != NULL)
+  {
+    free (ptr);
+  }
+}
+
+size_t
+xstrlen (const char *in)
+{
+  const char *s;
+  size_t cpt;
+  if (in == NULL)
+  {
+    return 0;
+  }
+  /* we want to avoid an overflow in case the input string isn't null
+terminated */
+  for (s = in, cpt = 0; *s && cpt < UINT_MAX; ++s, cpt++);
+  return (s - in);
+}
+
+void *
+xmalloc (size_t size)
+{
+  void *ret = malloc (size);
+  if (ret == NULL)
+    err (2, "xmalloc can not allocate %lu bytes", (u_long) size);
+  return ret;
+}
+
+char *
+xstrdup (const char *dup)
+{
+  size_t len;
+  char *copy;
+
+  len = xstrlen (dup);
+  if (len == 0)
+    return NULL;
+  copy = xmalloc (len + 1);
+  if (copy != NULL)
+    strncpy (copy, dup, len + 1);
+  return copy;
 }

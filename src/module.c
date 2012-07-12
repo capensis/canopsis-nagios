@@ -19,7 +19,7 @@
 
 #include "nagios.h"
 #include "logger.h"
-#include "strutil.h"
+#include "xutils.h"
 
 #include "broker.h"
 #include "neb2amqp.h"
@@ -52,6 +52,7 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
   g_options.exchange_name = "canopsis.events";
   g_options.log_level = 0;
   g_options.connector = "nagios";
+  g_options.max_size = 8192;
 
   // Parse module options
   parse_arguments (args);
@@ -129,6 +130,12 @@ parse_arguments (const char *args_orig)
 	      g_options.log_level = strtol (right, NULL, 10);
 	      logger (LG_DEBUG, "Setting debug level to %d", g_options.log_level);
 	    }
+      else if (strcmp (left, "max_size") == 0)
+        {
+          g_options.max_size = strtol (right, NULL, 10);
+          logger (LG_DEBUG, "Setting max_size buffer to %d bits",
+                  g_options.max_size);
+        }
 	  else if (strcmp (left, "name") == 0)
 	    {
 	      g_options.eventsource_name = right;
