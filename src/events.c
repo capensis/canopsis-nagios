@@ -23,6 +23,7 @@
 
 #include "json.h"
 #include "neb2amqp.h"
+#include "xutils.h"
 
 #include "events.h"
 
@@ -54,8 +55,6 @@ event_service_check (int event_type __attribute__ ((__unused__)), void *data)
       snprintf (key, xmin (g_options.max_size, (int) l), "%s.%s.check.resource.%s.%s", g_options.connector, g_options.eventsource_name, c->host_name, c->service_description);
 
       amqp_publish (key, buffer);
-
-      // We MUST NOT free key because it is stored in the heap!
 
       xfree (buffer);
     }
