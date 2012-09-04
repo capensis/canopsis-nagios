@@ -32,7 +32,7 @@ extern int event_broker_options;
 
 struct options g_options;
 
-void parse_arguments (const char *args_orig);
+static void n2a_parse_arguments (const char *args_orig);
 
 
 /* this function gets called when the module is loaded by the event broker */
@@ -54,16 +54,16 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
   g_options.connector = "nagios";
 
   // Parse module options
-  parse_arguments (args);
+  n2a_parse_arguments (args);
 
   // Init module
   //logger (LG_INFO, handle.info);
-  logger (LG_INFO, "NEB2amqp %s by Capensis. (connector: %s)", VERSION, g_options.connector);
-  logger (LG_INFO, "Please visit us at http://www.canopsis.org/");
+  n2a_logger (LG_INFO, "NEB2amqp %s by Capensis. (connector: %s)", VERSION, g_options.connector);
+  n2a_logger (LG_INFO, "Please visit us at http://www.canopsis.org/");
 
   if (! verify_event_broker_options ()) {
-      logger (LG_CRIT, "Fatal: bailing out. Please fix event_broker_options.");
-      logger (LG_CRIT, "Hint: your event_broker_options are set to %d. Try setting it to -1.", event_broker_options);
+      n2a_logger (LG_CRIT, "Fatal: bailing out. Please fix event_broker_options.");
+      n2a_logger (LG_CRIT, "Hint: your event_broker_options are set to %d. Try setting it to -1.", event_broker_options);
       return 1;
    }
  
@@ -71,7 +71,7 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
 
   register_callbacks ();
 
-  logger (LG_INFO, "successfully finished initialization");
+  n2a_logger (LG_INFO, "successfully finished initialization");
 
   return 0;
 }
@@ -80,7 +80,7 @@ int
 nebmodule_deinit (int flags __attribute__ ((__unused__)), int reason
 		  __attribute__ ((__unused__)))
 {
-  logger (LG_INFO, "deinitializing");
+  n2a_logger (LG_INFO, "deinitializing");
   
   deregister_callbacks ();
   amqp_disconnect ();
@@ -90,8 +90,8 @@ nebmodule_deinit (int flags __attribute__ ((__unused__)), int reason
 
 // This code is part of Check_MK (GPL v2).
 // The official homepage is at http://mathias-kettner.de/check_mk
-void
-parse_arguments (const char *args_orig)
+static void
+n2a_parse_arguments (const char *args_orig)
 {
 
   if (!args_orig)
@@ -99,17 +99,17 @@ parse_arguments (const char *args_orig)
 
   char *args = strdup (args_orig);
   char *token;
-  while (0 != (token = next_field (&args)))
+  while (0 != (token = n2a_next_field (&args)))
     {
       /* find = */
       char *part = token;
-      char *left = next_token (&part, '=');
-      char *right = next_token (&part, 0);
+      char *left = n2a_next_token (&part, '=');
+      char *right = n2a_next_token (&part, 0);
       if (right == NULL)
 	{
 	  char *subpart = left;
-	  char *subleft = next_token (&subpart, ':');
-	  char *subright = next_token (&subpart, 0);
+	  char *subleft = n2a_next_token (&subpart, ':');
+	  char *subright = n2a_next_token (&subpart, 0);
 	  if (subright == NULL)
 	    {
 	      g_options.hostname = subleft;
@@ -118,58 +118,58 @@ parse_arguments (const char *args_orig)
 	    {
 	      g_options.hostname = subright;
 	      g_options.port = strtol (subleft, NULL, 10);
-	      logger (LG_DEBUG, "Setting port number to %d", g_options.port);
+	      n2a_logger (LG_DEBUG, "Setting port number to %d", g_options.port);
 	    }
-	  logger (LG_DEBUG, "Setting hostname to %s", g_options.hostname);
+	  n2a_logger (LG_DEBUG, "Setting hostname to %s", g_options.hostname);
 	}
       else
 	{
 	  if (strcmp (left, "debug") == 0)
 	    {
 	      g_options.log_level = strtol (right, NULL, 10);
-	      logger (LG_DEBUG, "Setting debug level to %d", g_options.log_level);
+	      n2a_logger (LG_DEBUG, "Setting debug level to %d", g_options.log_level);
 	    }
 	  else if (strcmp (left, "name") == 0)
 	    {
 	      g_options.eventsource_name = right;
-	      logger (LG_DEBUG, "Setting g_eventsource_name to %s",
+	      n2a_logger (LG_DEBUG, "Setting g_eventsource_name to %s",
 		      g_options.eventsource_name);
 	    }
 	  else if (strcmp (left, "userid") == 0)
 	    {
 	      g_options.userid = right;
-	      logger (LG_DEBUG, "Setting userid to %s", g_options.userid);
+	      n2a_logger (LG_DEBUG, "Setting userid to %s", g_options.userid);
 	    }
 	  else if (strcmp (left, "password") == 0)
 	    {
 	      g_options.password = right;
-	      logger (LG_DEBUG, "Setting password to %s", g_options.password);
+	      n2a_logger (LG_DEBUG, "Setting password to %s", g_options.password);
 	    }
 	  else if (strcmp (left, "virtual_host") == 0)
 	    {
 	      g_options.virtual_host = right;
-	      logger (LG_DEBUG, "Setting virtual_host to %s", g_options.virtual_host);
+	      n2a_logger (LG_DEBUG, "Setting virtual_host to %s", g_options.virtual_host);
 	    }
 	  else if (strcmp (left, "exchange_name") == 0)
 	    {
 	      g_options.exchange_name = right;
-	      logger (LG_DEBUG, "Setting exchange_name to %s", g_options.exchange_name);
+	      n2a_logger (LG_DEBUG, "Setting exchange_name to %s", g_options.exchange_name);
 	    }
 	  else if (strcmp (left, "connector") == 0)
 	    {
 	      g_options.connector = right;
-	      logger (LG_DEBUG, "Setting connector to %s", g_options.connector);
+	      n2a_logger (LG_DEBUG, "Setting connector to %s", g_options.connector);
 	    }
 	  else if (strcmp (left, "port") == 0)
 	    {
 	      g_options.port = strtol (right, NULL, 10);
-	      logger (LG_DEBUG, "Setting port to %d", g_options.port);
+	      n2a_logger (LG_DEBUG, "Setting port to %d", g_options.port);
 	    }
 	  else if (strcmp (left, "host") == 0)
 	    {
 	      char *subpart = right;
-	      char *subleft = next_token (&subpart, ':');
-	      char *subright = next_token (&subpart, 0);
+	      char *subleft = n2a_next_token (&subpart, ':');
+	      char *subright = n2a_next_token (&subpart, 0);
 	      if (subright == NULL)
 		{
 		  g_options.hostname = subleft;
@@ -178,13 +178,13 @@ parse_arguments (const char *args_orig)
 		{
 		  g_options.hostname = subright;
 		  g_options.port = strtol (subleft, NULL, 10);
-		  logger (LG_DEBUG, "Setting port number to %d", g_options.port);
+		  n2a_logger (LG_DEBUG, "Setting port number to %d", g_options.port);
 		}
-	      logger (LG_DEBUG, "Setting hostname to %s", g_options.hostname);
+	      n2a_logger (LG_DEBUG, "Setting hostname to %s", g_options.hostname);
 	    }
 	  else
 	    {
-	      logger (LG_ERR, "Ignoring invalid option %s=%s", left, right);
+	      n2a_logger (LG_ERR, "Ignoring invalid option %s=%s", left, right);
 	    }
 	}
     }

@@ -39,7 +39,7 @@
 extern "C" {
 #endif 
 
-   void logger(int priority, const char *loginfo, ...);
+   void n2a_logger (int priority, const char *loginfo, ...);
 
 #ifdef __cplusplus
 }
