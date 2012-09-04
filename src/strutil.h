@@ -30,14 +30,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    void rstrip(char *);
-    char *lstrip(char *line);
+    static void n2a_rstrip(char *);
+    static char * n2a_lstrip(char *line);
 #ifdef __cplusplus
-    char *next_token(char **c, char delim = ',');
+    char * n2a_next_token(char **c, char delim = ',');
 #else
-    char *next_token(char **c, char delim);
+    char * n2a_next_token(char **c, char delim);
 #endif
-    char *next_field(char **line);
+    char * n2a_next_field(char **line);
 #ifdef __cplusplus
 }
 #endif

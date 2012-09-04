@@ -27,16 +27,16 @@
 
 #include "strutil.h"
 
-void
-rstrip (char *c)
+static void
+n2a_rstrip (char *c)
 {
   char *w = c + strlen (c) - 1;
   while (w >= c && isspace (*w))
     *w-- = '\0';
 }
 
-char *
-lstrip (char *c)
+static char *
+n2a_lstrip (char *c)
 {
   while (isspace (*c))
     c++;
@@ -50,10 +50,10 @@ lstrip (char *c)
    is then moved to the possible beginning of the
    next field. */
 char *
-next_field (char **c)
+n2a_next_field (char **c)
 {
   /* *c points to first character of field */
-  char *begin = lstrip (*c);	// skip leading spaces
+  char *begin = n2a_lstrip (*c);	// skip leading spaces
   if (!*begin)
     {
       *c = begin;
@@ -75,7 +75,7 @@ next_field (char **c)
 
 /* similar to next_field() but takes one character as delimiter */
 char *
-next_token (char **c, char delim)
+n2a_next_token (char **c, char delim)
 {
   char *begin = *c;
   if (!*begin)

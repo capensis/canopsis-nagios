@@ -31,7 +31,7 @@ extern struct options g_options;
 int g_last_event_program_status = 0;
 
 int
-event_service_check (int event_type __attribute__ ((__unused__)), void *data)
+n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *data)
 {
   //logger(LG_DEBUG, "Event: event_host_check");
   nebstruct_service_check_data *c = (nebstruct_service_check_data *) data;
@@ -53,7 +53,7 @@ event_service_check (int event_type __attribute__ ((__unused__)), void *data)
 }
 
 int
-event_host_check (int event_type __attribute__ ((__unused__)), void *data)
+n2a_event_host_check (int event_type __attribute__ ((__unused__)), void *data)
 {
   //logger(LG_DEBUG, "Event: event_service_check");
   nebstruct_host_check_data *c = (nebstruct_host_check_data *) data;
@@ -119,7 +119,7 @@ event_acknowledgement (int event_type
   
   if (c->type == NEBTYPE_ACKNOWLEDGEMENT_ADD)
     {
-      logger(LG_DEBUG, "Event: event_acknowledgement ADD");
+      n2a_logger(LG_DEBUG, "Event: event_acknowledgement ADD");
 
       char buffer[AMQP_MSG_SIZE_MAX];
       //TODO
@@ -144,11 +144,11 @@ event_downtime (int event_type __attribute__ ((__unused__)), void *data)
   
   if (c->type == NEBTYPE_DOWNTIME_START)
     {
-      logger(LG_DEBUG, "Event: event_downtime START");
+      n2a_logger(LG_DEBUG, "Event: event_downtime START");
     }
   else if (c->type == NEBTYPE_DOWNTIME_STOP)
     {
-      logger(LG_DEBUG, "Event: event_downtime STOP");
+      n2a_logger(LG_DEBUG, "Event: event_downtime STOP");
     }
 
   if (c->type == NEBTYPE_DOWNTIME_START || c->type == NEBTYPE_DOWNTIME_STOP)
@@ -170,11 +170,11 @@ event_comment (int event_type __attribute__ ((__unused__)), void *data)
   
   if (c->type == NEBTYPE_COMMENT_ADD)
     {
-      logger(LG_DEBUG, "Event: event_comment ADD");
+      n2a_logger(LG_DEBUG, "Event: event_comment ADD");
     }
   else if (c->type == NEBTYPE_COMMENT_DELETE)
     {
-      logger(LG_DEBUG, "Event: event_comment DELETE");
+      n2a_logger(LG_DEBUG, "Event: event_comment DELETE");
     }
 
   if (c->type == NEBTYPE_COMMENT_ADD || c->type == NEBTYPE_COMMENT_DELETE)
