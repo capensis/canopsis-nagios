@@ -35,11 +35,11 @@ Edit your Nagios/Icinga configuration (nagios.cfg):
 
 Options:
 
-   host =          AMQP Server (127.0.0.1)
-   port =          AMQP Port (5672)
-   userid =        AMQP login (guest)
-   password =      AMQP password (guest)
-   virtual_host =  AMQP Virtual host (canopsis)
-   exchange_name = AMQP Exchange (canopsis.events)
-   name =          Poller name (Central)
-   connector =     Connector name (nagios) (you can type "icinga" for icinga)
+    host =          AMQP Server (127.0.0.1)
+    port =          AMQP Port (5672)
+    userid =        AMQP login (guest)
+    password =      AMQP password (guest)
+    virtual_host =  AMQP Virtual host (canopsis)
+    exchange_name = AMQP Exchange (canopsis.events)
+    name =          Poller name (Central)
+    connector =     Connector name (nagios) (you can type "icinga" for icinga)
