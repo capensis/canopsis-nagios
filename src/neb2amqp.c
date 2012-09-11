@@ -133,8 +133,10 @@ amqp_connect (void)
 
       amqp_lastconnect = now;
 
+    if (! conn){
       n2a_logger (LG_INFO, "AMQP: Init connection");
       conn = amqp_new_connection ();
+    }
 
       n2a_logger (LG_INFO, "AMQP: Opening socket");
       on_error (sockfd = amqp_open_socket (g_options.hostname, g_options.port), "Opening socket");
@@ -180,8 +182,10 @@ amqp_disconnect (void)
 
       n2a_logger (LG_INFO, "AMQP: Ending connection");
       on_error (amqp_destroy_connection (conn), "Ending connection");
-
+      
+      conn = NULL;
       amqp_connected = false;
+      
       n2a_logger (LG_INFO, "AMQP: Successfully disconnected");
     }
   else
