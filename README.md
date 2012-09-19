@@ -15,7 +15,7 @@ Redhat like (Centos ..):
 
 ## Download and Build ##
 
-    git https://github.com/capensis/canopsis-nagios.git
+    git clone https://github.com/capensis/canopsis-nagios.git
     cd canopsis-nagios
     make
 
