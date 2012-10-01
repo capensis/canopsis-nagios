@@ -133,14 +133,21 @@ amqp_connect (void)
 
       amqp_lastconnect = now;
 
-    if (! conn){
-      n2a_logger (LG_INFO, "AMQP: Init connection");
-      conn = amqp_new_connection ();
-    }
-
+      if (conn)
+	{
+		amqp_destroy_connection(conn);
+		amqp_socket_close(sockfd);
+	}
+	  
       n2a_logger (LG_INFO, "AMQP: Opening socket");
       on_error (sockfd = amqp_open_socket (g_options.hostname, g_options.port), "Opening socket");
 
+      if (!amqp_errors)
+	{
+      n2a_logger (LG_INFO, "AMQP: Init connection");
+      conn = amqp_new_connection ();
+	}
+	
       if (!amqp_errors)
 	{
 	  amqp_set_sockfd (conn, sockfd);
@@ -157,6 +164,7 @@ amqp_connect (void)
 	}
 
       amqp_connected = false;
+      
       if (!amqp_errors)
 	{
 	  n2a_logger (LG_INFO, "AMQP: Successfully connected");
@@ -170,6 +178,8 @@ amqp_connect (void)
 void
 amqp_disconnect (void)
 {
+  amqp_errors = false;
+  
   if (amqp_connected)
     {
       n2a_logger (LG_INFO, "AMQP: Closing channel");
@@ -198,9 +208,11 @@ void
 amqp_publish (const char *routingkey, const char *message)
 {
 
+  if (! amqp_connected)
+	amqp_connect ();
+
   if (amqp_connected)
     {
-
       amqp_basic_properties_t props;
       props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
       props.content_type = amqp_cstring_bytes ("application/json");
@@ -225,10 +237,6 @@ amqp_publish (const char *routingkey, const char *message)
 	 n2a_logger (LG_INFO, "AMQP: Try to reconnect ...");
 		amqp_connect ();
 		}
-    }
-  else
-    {
-      amqp_connect ();
     }
 
 }
