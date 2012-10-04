@@ -39,14 +39,26 @@ n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *data
   if (c->type == NEBTYPE_SERVICECHECK_PROCESSED)
     {
       //logger(LG_DEBUG, "SERVICECHECK_PROCESSED: %s->%s", c->host_name, c->service_description);
+      char *buffer = NULL, *key = NULL;
 
-      char buffer[AMQP_MSG_SIZE_MAX], key[AMQP_MSG_SIZE_MAX];
-      
-      nebstruct_service_check_data_to_json (buffer, c);
-      
-      snprintf (key, AMQP_MSG_SIZE_MAX, "%s.%s.check.resource.%s.%s", g_options.connector, g_options.eventsource_name, c->host_name, c->service_description);
+      size_t l = strlen(g_options.connector) +
+      strlen(g_options.eventsource_name) + strlen(c->host_name) + strlen(c->service_description) + 20;
+      // "..check.ressource.." + \0 = 20 chars
 
-      amqp_publish (key, buffer);
+      nebstruct_service_check_data_to_json(&buffer, c); 
+
+      // DO NOT FREE !!!
+      xalloca(key, xmin(g_options.max_size, (int)l) * sizeof(char));
+
+      snprintf(key, xmin(g_options.max_size, (int)l),
+                 "%s.%s.check.resource.%s.%s", g_options.connector,
+                 g_options.eventsource_name, c->host_name,
+                 c->service_description);
+
+      amqp_publish(key, buffer);
+
+      xfree(buffer);
+
     }
 
   return 0;
@@ -61,14 +73,22 @@ n2a_event_host_check (int event_type __attribute__ ((__unused__)), void *data)
   if (c->type == NEBTYPE_HOSTCHECK_PROCESSED)
     {
       //logger(LG_DEBUG, "HOSTCHECK_PROCESSED: %s", c->host_name);
+      char *buffer = NULL, *key = NULL;
 
-      char buffer[AMQP_MSG_SIZE_MAX], key[AMQP_MSG_SIZE_MAX];
-      
-      nebstruct_host_check_data_to_json (buffer, c);
-      
-      snprintf (key, AMQP_MSG_SIZE_MAX, "%s.%s.check.component.%s", g_options.connector, g_options.eventsource_name, c->host_name);
+      size_t l = xstrlen(g_options.connector) + xstrlen(g_options.eventsource_name) + xstrlen(c->host_name) + 20; 
 
-      amqp_publish (key, buffer);
+      nebstruct_host_check_data_to_json(&buffer, c); 
+
+      // DO NOT FREE !!!
+      xalloca(key, xmin(g_options.max_size, (int)l) * sizeof(char));
+
+      snprintf(key, xmin(g_options.max_size, (int)l),
+                 "%s.%s.check.component.%s", g_options.connector,
+                 g_options.eventsource_name, c->host_name);
+
+      amqp_publish(key, buffer);
+
+      xfree(buffer);
     }
 
   return 0;

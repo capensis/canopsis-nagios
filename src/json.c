@@ -20,6 +20,7 @@
 #include "nagios.h"
 #include "module.h"
 #include "logger.h"
+#include "xutils.h"
 
 #include "jansson.h"
 
@@ -35,10 +36,11 @@ charnull (char *data)
   return data;
 }
 
-void
-nebstruct_service_check_data_to_json (char *buffer,
+int
+nebstruct_service_check_data_to_json (char **buffer,
 				      nebstruct_service_check_data * c)
 {
+  int nbmsg = 1;
 
   service *service_object = c->object_ptr;
   host *host_object = service_object->host_ptr;
@@ -124,21 +126,52 @@ nebstruct_service_check_data_to_json (char *buffer,
   json_object_set(jdata, "command_name", item);
   json_decref(item);
   
-  char * json = json_dumps( jdata, 0 );
-  sprintf (buffer, "%s", json);
-  free(json);
-  
+  char *json = json_dumps(jdata, 0);
+  size_t ref = xstrlen(json);
+
+  if ((int)ref > g_options.max_size) {
+      //size_t diff = ref - g_options.max_size - xstrlen (c->perf_data);
+      size_t save = ref - g_options.max_size;
+      if (save <= xstrlen(c->long_output)) {
+          item = json_string("");
+          json_object_set(jdata, "long_output", item);
+          json_decref(item);
+          logger(LG_INFO, "long_output is too long!");
+      } else if (save <= xstrlen(c->output)) {
+          item = json_string("");
+          json_object_set(jdata, "output", item);
+          json_decref(item);
+          logger(LG_INFO, "output is too long!");
+      } else if (save <= xstrlen(c->perf_data)) {
+          item = json_string("");
+          json_object_set(jdata, "perf_data", item);
+          json_decref(item);
+          logger(LG_INFO, "perfdata is too long!");
+      }
+
+      xfree(json);
+      json = json_dumps(jdata, 0);
+  }
+
+  ref = xstrlen(json);
+  *buffer = xmalloc(ref + 1);
+
+  snprintf(*buffer, ref + 1, "%s", json);
+  xfree(json);
+
   json_decref(jdata);
 
+  return nbmsg;
 }
 
-void
-nebstruct_host_check_data_to_json (char *buffer,
+int
+nebstruct_host_check_data_to_json (char **buffer,
 				   nebstruct_host_check_data * c)
 {
 
   host *host_object = c->object_ptr;
 
+  int nbmsg;
   int cstate = c->state;
   // Set to Critical
   if (cstate >= 1){
@@ -220,12 +253,42 @@ nebstruct_host_check_data_to_json (char *buffer,
   
   item = json_string(c->command_name);
   json_object_set(jdata, "command_name", item);
-  json_decref(item);
-  
-  char * json = json_dumps( jdata, 0 );
-  sprintf (buffer, "%s", json);
-  free(json);
-  
-  json_decref(jdata);
+  json_decref(item);  
 
+  char *json = json_dumps(jdata, 0);
+  size_t ref = xstrlen(json);
+
+  if ((int)ref > g_options.max_size) {
+      size_t save = ref - g_options.max_size;
+      if (save <= xstrlen(c->long_output)) {
+          item = json_string("");
+          json_object_set(jdata, "long_output", item);
+          json_decref(item);
+          logger(LG_INFO, "long_output is too long!");
+      } else if (save <= xstrlen(c->output)) {
+          item = json_string("");
+          json_object_set(jdata, "output", item);
+          json_decref(item);
+          logger(LG_INFO, "output is too long!");
+      } else if (save <= xstrlen(c->perf_data)) {
+          item = json_string("");
+          json_object_set(jdata, "perf_data", item);
+          json_decref(item);
+          logger(LG_INFO, "perfdata is too long!");
+      }
+
+      xfree(json);
+      json = json_dumps(jdata, 0);
+  }
+
+  ref = xstrlen(json);
+  *buffer = xmalloc(ref + 1);
+
+  snprintf(*buffer, ref + 1, "%s", json);
+
+  xfree(json);
+
+  json_decref(jdata);
+ 
+  return nbmsg;
 }
