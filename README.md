@@ -10,7 +10,7 @@ Debian like (Debian, Ubuntu ...):
 Redhat like (Centos ..):
 
     yum groupinstall "Development Tools"
-    yum install kernel-devel kernel-headers git-core
+    yum install git-core
 
 
 ## Download and Build ##
