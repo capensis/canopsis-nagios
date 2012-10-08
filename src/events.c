@@ -20,6 +20,7 @@
 #include "nagios.h"
 #include "module.h"
 #include "logger.h"
+#include "xutils.h"
 
 #include "json.h"
 #include "neb2amqp.h"

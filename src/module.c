@@ -133,7 +133,7 @@ n2a_parse_arguments (const char *args_orig)
       else if (strcmp(left, "max_size") == 0)
         {
           g_options.max_size = strtol(right, NULL, 10);
-          logger(LG_DEBUG, "Setting max_size buffer to %d bits",
+          n2a_logger (LG_DEBUG, "Setting max_size buffer to %d bits",
               g_options.max_size);
         }
 	  else if (strcmp (left, "name") == 0)

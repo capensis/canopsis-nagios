@@ -136,17 +136,17 @@ nebstruct_service_check_data_to_json (char **buffer,
           item = json_string("");
           json_object_set(jdata, "long_output", item);
           json_decref(item);
-          logger(LG_INFO, "long_output is too long!");
+          n2a_logger(LG_INFO, "long_output is too long!");
       } else if (save <= xstrlen(c->output)) {
           item = json_string("");
           json_object_set(jdata, "output", item);
           json_decref(item);
-          logger(LG_INFO, "output is too long!");
+          n2a_logger(LG_INFO, "output is too long!");
       } else if (save <= xstrlen(c->perf_data)) {
           item = json_string("");
           json_object_set(jdata, "perf_data", item);
           json_decref(item);
-          logger(LG_INFO, "perfdata is too long!");
+          n2a_logger(LG_INFO, "perfdata is too long!");
       }
 
       xfree(json);
@@ -264,17 +264,17 @@ nebstruct_host_check_data_to_json (char **buffer,
           item = json_string("");
           json_object_set(jdata, "long_output", item);
           json_decref(item);
-          logger(LG_INFO, "long_output is too long!");
+          n2a_logger(LG_INFO, "long_output is too long!");
       } else if (save <= xstrlen(c->output)) {
           item = json_string("");
           json_object_set(jdata, "output", item);
           json_decref(item);
-          logger(LG_INFO, "output is too long!");
+          n2a_logger(LG_INFO, "output is too long!");
       } else if (save <= xstrlen(c->perf_data)) {
           item = json_string("");
           json_object_set(jdata, "perf_data", item);
           json_decref(item);
-          logger(LG_INFO, "perfdata is too long!");
+          n2a_logger(LG_INFO, "perfdata is too long!");
       }
 
       xfree(json);
