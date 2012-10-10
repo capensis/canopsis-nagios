@@ -82,6 +82,28 @@ int amqp_open_socket(char const *hostname,
       last_error = -amqp_socket_error();
       continue;
     }
+
+    /*
+      Set SO_RCVTIMEO and SO_SNDTIMEO on socket
+    */
+    struct timeval timeout;      
+    timeout.tv_sec = 2;
+    timeout.tv_usec = 0;
+
+    if (0 != amqp_socket_setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) )
+    {
+      last_error = -amqp_socket_error();
+      amqp_socket_close(sockfd);
+      continue;
+    }
+    
+    if (0 != amqp_socket_setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) )
+    {
+      last_error = -amqp_socket_error();
+      amqp_socket_close(sockfd);
+      continue;
+    }
+
 #ifdef DISABLE_SIGPIPE_WITH_SETSOCKOPT
     if (0 != amqp_socket_setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &one, sizeof(one)))
     {
