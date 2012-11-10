@@ -31,6 +31,24 @@ extern struct options g_options;
 
 int g_last_event_program_status = 0;
 
+// Define a macro that will handle the split of messages
+#define split_message(message,field)                                               \
+do {                                                                               \
+    temp = ((int)xstrlen(message)/left + 1);                                       \
+    i = 0;                                                                         \
+    while (i < temp) {                                                             \
+        nebstruct_service_check_data_update_json(&jdata, message, field, left, i); \
+        char *json = json_dumps(jdata, 0);                                         \
+        buffer = xmalloc (message_size + 1);                                       \
+        snprintf (buffer, message_size + 1, "%s", json);                           \
+        amqp_publish(key, buffer);                                                 \
+        xfree(buffer);                                                             \
+        xfree (json);                                                              \
+        i++;                                                                       \
+    }                                                                              \
+} while(0);
+
+
 int
 n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *data)
 {
@@ -42,11 +60,14 @@ n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *data
       //logger(LG_DEBUG, "SERVICECHECK_PROCESSED: %s->%s", c->host_name, c->service_description);
       char *buffer = NULL, *key = NULL;
 
-      size_t l = strlen(g_options.connector) +
-      strlen(g_options.eventsource_name) + strlen(c->host_name) + strlen(c->service_description) + 20;
+      size_t l = xstrlen(g_options.connector) +
+      xstrlen(g_options.eventsource_name) + xstrlen(c->host_name) + xstrlen(c->service_description) + 20;
       // "..check.ressource.." + \0 = 20 chars
 
-      nebstruct_service_check_data_to_json(&buffer, c); 
+      json_t *jdata = NULL;
+      size_t message_size = 0;
+
+      int nbmsg = nebstruct_service_check_data_to_json(c, &jdata, &message_size); 
 
       // DO NOT FREE !!!
       xalloca(key, xmin(g_options.max_size, (int)l) * sizeof(char));
@@ -56,9 +77,33 @@ n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *data
                  g_options.eventsource_name, c->host_name,
                  c->service_description);
 
-      amqp_publish(key, buffer);
+      if (nbmsg == 1) {
+          char *json = json_dumps(jdata, 0);
+          buffer = xmalloc (message_size + 1);
 
-      xfree(buffer);
+          snprintf (buffer, message_size + 1, "%s", json);
+
+          amqp_publish(key, buffer);
+
+//          fprintf (stdout, "msg: %s\n", buffer);
+
+          xfree(buffer);
+          xfree (json);
+      } else {
+          int left = g_options.max_size - (int)message_size;
+          size_t l_out = xstrlen(c->long_output);
+          size_t out = xstrlen(c->output);
+          size_t perf = xstrlen(c->perf_data);
+          int msgs = ((int)l_out/left + 1) + ((int)out/left + 1) + ((int)perf/left + 1);
+          n2a_logger(LG_INFO, "Data too long... sending %d messages for host: %s, service: %s", msgs, c->host_name, c->service_description);
+          int i, temp;
+          split_message(c->long_output, "long_output");
+          split_message(c->output, "output");
+          split_message(c->perf_data, "perf_data");
+      }
+
+      if (jdata != NULL)
+          json_decref (jdata);
 
     }
 
@@ -78,7 +123,7 @@ n2a_event_host_check (int event_type __attribute__ ((__unused__)), void *data)
 
       size_t l = xstrlen(g_options.connector) + xstrlen(g_options.eventsource_name) + xstrlen(c->host_name) + 20; 
 
-      nebstruct_host_check_data_to_json(&buffer, c); 
+//      nebstruct_host_check_data_to_json(&buffer, c); 
 
       // DO NOT FREE !!!
       xalloca(key, xmin(g_options.max_size, (int)l) * sizeof(char));
@@ -87,7 +132,7 @@ n2a_event_host_check (int event_type __attribute__ ((__unused__)), void *data)
                  "%s.%s.check.component.%s", g_options.connector,
                  g_options.eventsource_name, c->host_name);
 
-      amqp_publish(key, buffer);
+//      amqp_publish(key, buffer);
 
       xfree(buffer);
     }

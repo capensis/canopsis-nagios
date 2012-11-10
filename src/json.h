@@ -20,7 +20,11 @@
 #ifndef json_h
 #define json_h
 
-int nebstruct_service_check_data_to_json(char ** buffer, nebstruct_service_check_data *c);
+#include "jansson.h"
+
+void nebstruct_service_check_data_update_json(json_t **pdata, const char *message, const char *field, int size, int cpt);
+
+int nebstruct_service_check_data_to_json(nebstruct_service_check_data *c, json_t **pdata, size_t *message_size);
 int nebstruct_host_check_data_to_json(char ** buffer, nebstruct_host_check_data *c);
 
 //void nebstruct_program_status_data_to_json(char * buffer, nebstruct_program_status_data *c);
