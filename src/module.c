@@ -28,6 +28,8 @@
 
 NEB_API_VERSION (CURRENT_NEB_API_VERSION)
 
+static char *g_args = NULL;
+
 extern int event_broker_options;
 
 struct options g_options;
@@ -85,7 +87,9 @@ nebmodule_deinit (int flags __attribute__ ((__unused__)), int reason
   
   deregister_callbacks ();
   amqp_disconnect ();
-  
+ 
+  xfree (g_args);
+
   return 0;
 }
 
@@ -98,9 +102,10 @@ n2a_parse_arguments (const char *args_orig)
   if (!args_orig)
     return;			// no arguments, use default options
 
-  char *args = strdup (args_orig);
+  g_args = xstrdup (args_orig);
+  char *save = g_args;
   char *token;
-  while (0 != (token = n2a_next_field (&args)))
+  while (0 != (token = n2a_next_field (&g_args)))
     {
       /* find = */
       char *part = token;
@@ -195,4 +200,5 @@ n2a_parse_arguments (const char *args_orig)
 	    }
 	}
     }
+    g_args = save;
 }

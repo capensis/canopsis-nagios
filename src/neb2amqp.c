@@ -38,12 +38,12 @@
 extern struct options g_options;
 
 int sockfd;
-bool amqp_connected;
-bool amqp_errors;
+bool amqp_connected = false;
+bool amqp_errors = false;
 int amqp_lastconnect = 0;
 int amqp_wait_time = 10;
 
-amqp_connection_state_t conn;
+amqp_connection_state_t conn = NULL;
 
 void
 on_error (int x, char const *context)
@@ -73,10 +73,13 @@ on_amqp_error (amqp_rpc_reply_t x, char const *context)
       n2a_logger (LG_INFO, "AMQP: %s: missing RPC reply type!\n", context);
       break;
 
-    case AMQP_RESPONSE_LIBRARY_EXCEPTION:
+    case AMQP_RESPONSE_LIBRARY_EXCEPTION: {
+      char *err = amqp_error_string (x.library_error);
       n2a_logger (LG_INFO, "AMQP: %s: %s\n", context,
-	      amqp_error_string (x.library_error));
+	      err);
+      xfree (err);
       break;
+    }
 
     case AMQP_RESPONSE_SERVER_EXCEPTION:
       switch (x.reply.id)
@@ -195,6 +198,8 @@ amqp_disconnect (void)
       
       conn = NULL;
       amqp_connected = false;
+
+      amqp_socket_close(sockfd);
       
       n2a_logger (LG_INFO, "AMQP: Successfully disconnected");
     }
