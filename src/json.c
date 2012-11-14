@@ -47,7 +47,7 @@ nebstruct_service_check_data_update_json(json_t **pdata,
   json_t *jdata = *pdata;
 
   char *temp = NULL;
-  int offset = cpt * size;
+  int offset = cpt * (size - 1); // avoid the final \0 from previous snprintf
 
   xalloca (temp, size);
 
