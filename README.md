@@ -25,7 +25,7 @@ via HTTP:
 
     wget --no-check-certificate  https://github.com/capensis/canopsis-nagios/tarball/master -O canopsis-nagios.tgz
     tar xfz canopsis-nagios.tgz
-    cd capensis-*
+    cd canopsis-*
     make
 
 ## Install ##
