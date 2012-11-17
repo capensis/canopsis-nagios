@@ -29,7 +29,7 @@
 #include <string.h>
 
 void
-logger (int priority, const char *loginfo, ...)
+n2a_logger (int priority, const char *loginfo, ...)
 {
   char buffer[8192];
   snprintf (buffer, 20, "neb2amqp: ");

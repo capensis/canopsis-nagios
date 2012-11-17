@@ -38,12 +38,12 @@
 extern struct options g_options;
 
 int sockfd;
-bool amqp_connected;
-bool amqp_errors;
+bool amqp_connected = false;
+bool amqp_errors = false;
 int amqp_lastconnect = 0;
 int amqp_wait_time = 10;
 
-amqp_connection_state_t conn;
+amqp_connection_state_t conn = NULL;
 
 void
 on_error (int x, char const *context)
@@ -52,7 +52,7 @@ on_error (int x, char const *context)
   if (x < 0)
     {
       char *errstr = amqp_error_string (-x);
-      logger (LG_INFO, "AMQP: %s: %s\n", context, errstr);
+      n2a_logger (LG_INFO, "AMQP: %s: %s\n", context, errstr);
       free (errstr);
 
       amqp_errors = true;
@@ -70,13 +70,16 @@ on_amqp_error (amqp_rpc_reply_t x, char const *context)
       return;
 
     case AMQP_RESPONSE_NONE:
-      logger (LG_INFO, "AMQP: %s: missing RPC reply type!\n", context);
+      n2a_logger (LG_INFO, "AMQP: %s: missing RPC reply type!\n", context);
       break;
 
-    case AMQP_RESPONSE_LIBRARY_EXCEPTION:
-      logger (LG_INFO, "AMQP: %s: %s\n", context,
-	      amqp_error_string (x.library_error));
+    case AMQP_RESPONSE_LIBRARY_EXCEPTION: {
+      char *err = amqp_error_string (x.library_error);
+      n2a_logger (LG_INFO, "AMQP: %s: %s\n", context,
+	      err);
+      xfree (err);
       break;
+    }
 
     case AMQP_RESPONSE_SERVER_EXCEPTION:
       switch (x.reply.id)
@@ -85,7 +88,7 @@ on_amqp_error (amqp_rpc_reply_t x, char const *context)
 	  {
 	    amqp_connection_close_t *m =
 	      (amqp_connection_close_t *) x.reply.decoded;
-	    logger (LG_INFO,
+	    n2a_logger (LG_INFO,
 		    "AMQP: %s: server connection error %d, message: %.*s\n",
 		    context, m->reply_code, (int) m->reply_text.len,
 		    (char *) m->reply_text.bytes);
@@ -95,14 +98,14 @@ on_amqp_error (amqp_rpc_reply_t x, char const *context)
 	  {
 	    amqp_channel_close_t *m =
 	      (amqp_channel_close_t *) x.reply.decoded;
-	    logger (LG_INFO,
+	    n2a_logger (LG_INFO,
 		    "AMQP: %s: server channel error %d, message: %.*s\n",
 		    context, m->reply_code, (int) m->reply_text.len,
 		    (char *) m->reply_text.bytes);
 	    break;
 	  }
 	default:
-	  logger (LG_INFO,
+	  n2a_logger (LG_INFO,
 		  "AMQP: %s: unknown server error, method id 0x%08X\n",
 		  context, x.reply.id);
 	  break;
@@ -133,31 +136,41 @@ amqp_connect (void)
 
       amqp_lastconnect = now;
 
-      logger (LG_INFO, "AMQP: Init connection");
-      conn = amqp_new_connection ();
-
-      logger (LG_INFO, "AMQP: Opening socket");
+      if (conn)
+	{
+		amqp_destroy_connection(conn);
+		amqp_socket_close(sockfd);
+	}
+	  
+      n2a_logger (LG_INFO, "AMQP: Opening socket");
       on_error (sockfd = amqp_open_socket (g_options.hostname, g_options.port), "Opening socket");
 
       if (!amqp_errors)
 	{
+      n2a_logger (LG_INFO, "AMQP: Init connection");
+      conn = amqp_new_connection ();
+	}
+	
+      if (!amqp_errors)
+	{
 	  amqp_set_sockfd (conn, sockfd);
 
-	  logger (LG_INFO, "AMQP: Logging");
+	  n2a_logger (LG_INFO, "AMQP: Logging");
 	  on_amqp_error (amqp_login(conn, g_options.virtual_host, 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, g_options.userid, g_options.password), "Logging in");
 	}
 
       if (!amqp_errors)
 	{
-	  logger (LG_INFO, "AMQP: Open channel");
+	  n2a_logger (LG_INFO, "AMQP: Open channel");
 	  amqp_channel_open (conn, 1);
 	  on_amqp_error (amqp_get_rpc_reply (conn), "Opening channel");
 	}
 
       amqp_connected = false;
+      
       if (!amqp_errors)
 	{
-	  logger (LG_INFO, "AMQP: Successfully connected");
+	  n2a_logger (LG_INFO, "AMQP: Successfully connected");
 	  amqp_connected = true;
 	}
 
@@ -168,25 +181,31 @@ amqp_connect (void)
 void
 amqp_disconnect (void)
 {
+  amqp_errors = false;
+  
   if (amqp_connected)
     {
-      logger (LG_INFO, "AMQP: Closing channel");
+      n2a_logger (LG_INFO, "AMQP: Closing channel");
       on_amqp_error (amqp_channel_close (conn, 1, AMQP_REPLY_SUCCESS),
 		     "Closing channel");
 
-      logger (LG_INFO, "AMQP: Closing connection");
+      n2a_logger (LG_INFO, "AMQP: Closing connection");
       on_amqp_error (amqp_connection_close (conn, AMQP_REPLY_SUCCESS),
 		     "Closing connection");
 
-      logger (LG_INFO, "AMQP: Ending connection");
+      n2a_logger (LG_INFO, "AMQP: Ending connection");
       on_error (amqp_destroy_connection (conn), "Ending connection");
-
+      
+      conn = NULL;
       amqp_connected = false;
-      logger (LG_INFO, "AMQP: Successfully disconnected");
+
+      amqp_socket_close(sockfd);
+      
+      n2a_logger (LG_INFO, "AMQP: Successfully disconnected");
     }
   else
     {
-      logger (LG_INFO, "AMQP: Impossible to disconnect, not connected");
+      n2a_logger (LG_INFO, "AMQP: Impossible to disconnect, not connected");
     }
 }
 
@@ -194,9 +213,11 @@ void
 amqp_publish (const char *routingkey, const char *message)
 {
 
+  if (! amqp_connected)
+	amqp_connect ();
+
   if (amqp_connected)
     {
-
       amqp_basic_properties_t props;
       props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
       props.content_type = amqp_cstring_bytes ("application/json");
@@ -216,15 +237,11 @@ amqp_publish (const char *routingkey, const char *message)
       if (amqp_errors)
 		{
 		//TODO: re-queue event
-		logger (LG_INFO, "AMQP: Error on publish");
+	 n2a_logger (LG_INFO, "AMQP: Error on publish");
 		amqp_disconnect ();
-		logger (LG_INFO, "AMQP: Try to reconnect ...");
+	 n2a_logger (LG_INFO, "AMQP: Try to reconnect ...");
 		amqp_connect ();
 		}
-    }
-  else
-    {
-      amqp_connect ();
     }
 
 }

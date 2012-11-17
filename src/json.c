@@ -20,6 +20,7 @@
 #include "nagios.h"
 #include "module.h"
 #include "logger.h"
+#include "xutils.h"
 
 #include "jansson.h"
 #include "xutils.h"
@@ -37,17 +38,44 @@ charnull (char *data)
 }
 
 void
-nebstruct_service_check_data_to_json (char **buffer,
-				      nebstruct_service_check_data * c)
+nebstruct_service_check_data_update_json(json_t **pdata, 
+                                         const char *message, 
+                                         const char *field, 
+                                         int size, 
+                                         int cpt)
 {
+  json_t *item;
+  json_t *jdata = *pdata;
 
-  service *service_object = c->object_ptr;
-  host *host_object = service_object->host_ptr;
+  char *temp = NULL;
+  int offset = cpt * (size - 1); // avoid the final \0 from previous snprintf
 
-  json_t* jdata;
+  xalloca (temp, size);
+
+  snprintf (temp, size, "%s", message+offset);
+
+//  printf ("offset: %d, sending: %s\n", offset, temp);
+
+  json_object_del(jdata, field);
+  item = json_string(temp);
+  json_object_set(jdata, field, item);
+  json_decref(item);
+}
+
+int
+nebstruct_service_check_data_to_json (nebstruct_service_check_data * c,
+                                      json_t **pdata,
+                                      size_t *message_size)
+{
+  int nbmsg = 1;
+
+  //service *service_object = c->object_ptr;
+  //host *host_object = service_object->host_ptr;
+
   json_t* item;
   
-  jdata = json_object();
+  *pdata = json_object();
+  json_t* jdata = *pdata;
  
   item = json_string(g_options.connector);
   json_object_set(jdata, "connector", item);
@@ -88,19 +116,19 @@ nebstruct_service_check_data_to_json (char **buffer,
   item = json_integer(c->state_type);
   json_object_set(jdata, "state_type", item);
   json_decref(item);
-  
-  item = json_string(c->output);
-  json_object_set(jdata, "output", item);
+
+  item = json_string("");
+  json_object_set(jdata, "output",	item);
   json_decref(item);
   
-  item = json_string(c->long_output); 
+  item = json_string(""); 
   json_object_set(jdata, "long_output", item);
   json_decref(item);
   
-  item = json_string(c->perf_data);
+  item = json_string("");
   json_object_set(jdata, "perf_data", item);
   json_decref(item);
-  
+
   item = json_integer(c->check_type);
   json_object_set(jdata, "check_type", item);
   json_decref(item);
@@ -125,54 +153,49 @@ nebstruct_service_check_data_to_json (char **buffer,
   json_object_set(jdata, "command_name", item);
   json_decref(item);
   
-  char * json = json_dumps( jdata, 0 );
-  size_t ref = xstrlen (json);
+  char *json = json_dumps(jdata, 0);
+  *message_size = xstrlen(json);
+  xfree (json);
 
-  if ((int) ref > g_options.max_size)
-    {
-      size_t save = ref - g_options.max_size;
-      if (save <= xstrlen (c->long_output))
-        {
-          item = json_string("");
-          json_object_set(jdata, "long_output", item);
-          json_decref(item);
-          logger (LG_INFO, "long_output is too long!");
-        }
-      else if (save <= xstrlen (c->output))
-        {
-          item = json_string("");
-          json_object_set(jdata, "output", item);
-          json_decref(item);
-          logger (LG_INFO, "output is too long!");
-        }
-      else if (save <= xstrlen (c->perf_data))
-        {
-          item = json_string("");
-          json_object_set(jdata, "perf_data", item);
-          json_decref(item);
-          logger (LG_INFO, "perfdata is too long!");
-        }
+  int left = g_options.max_size - (int)*message_size;
 
+  size_t rest = xstrlen(c->long_output) + xstrlen(c->output) + xstrlen(c->perf_data);
+  if ((int)rest > left) {
+      /* we work with int so we add 1 to the division */
+      nbmsg = ((int)rest / left) + 1;
+  } else {
+      item = json_string(c->long_output);
+      json_object_set(jdata, "long_output", item);
+      json_decref(item);
+
+      item = json_string(c->output);
+      json_object_set(jdata, "output", item);
+      json_decref(item);
+
+      item = json_string(c->perf_data);
+      json_object_set(jdata, "perf_data", item);
+      json_decref(item);
+
+      json = json_dumps(jdata, 0);
+      *message_size = xstrlen(json);
       xfree (json);
-      json = json_dumps( jdata, 0 );
-    }
+  }
 
-  ref = xstrlen (json);
-  *buffer = xmalloc (ref + 1);
+  // Do not free the struct here since we work with a pointer
+  // we will free it outside this function
+/*  json_decref(jdata);*/
 
-  snprintf (*buffer, ref+1, "%s", json);
-  xfree(json);
-  
-  json_decref(jdata);
+  return nbmsg;
 }
 
-void
+int
 nebstruct_host_check_data_to_json (char **buffer,
 				   nebstruct_host_check_data * c)
 {
 
   host *host_object = c->object_ptr;
 
+  int nbmsg;
   int cstate = c->state;
   // Set to Critical
   if (cstate >= 1){
@@ -254,46 +277,42 @@ nebstruct_host_check_data_to_json (char **buffer,
   
   item = json_string(c->command_name);
   json_object_set(jdata, "command_name", item);
-  json_decref(item);
-  
-  char * json = json_dumps( jdata, 0 );
-    size_t ref = xstrlen (json);
+  json_decref(item);  
 
-  if ((int) ref > g_options.max_size)
-    {   
+  char *json = json_dumps(jdata, 0);
+  size_t ref = xstrlen(json);
+
+  if ((int)ref > g_options.max_size) {
       size_t save = ref - g_options.max_size;
-      if (save <= xstrlen (c->long_output))
-        {   
+      if (save <= xstrlen(c->long_output)) {
           item = json_string("");
           json_object_set(jdata, "long_output", item);
           json_decref(item);
-          logger (LG_INFO, "long_output is too long!");
-        }   
-      else if (save <= xstrlen (c->output))
-        {   
+          n2a_logger(LG_INFO, "long_output is too long! (host: %s)", c->host_name);
+      } else if (save <= xstrlen(c->output)) {
           item = json_string("");
           json_object_set(jdata, "output", item);
           json_decref(item);
-          logger (LG_INFO, "output is too long!");
-        }   
-      else if (save <= xstrlen (c->perf_data))
-        {   
+          n2a_logger(LG_INFO, "output is too long! (host: %s)", c->host_name);
+      } else if (save <= xstrlen(c->perf_data)) {
           item = json_string("");
           json_object_set(jdata, "perf_data", item);
           json_decref(item);
-          logger (LG_INFO, "perfdata is too long!");
-        }   
+          n2a_logger(LG_INFO, "perfdata is too long! (host: %s)", c->host_name);
+      }
 
-      xfree (json);
-      json = json_dumps( jdata, 0 );
-    }   
+      xfree(json);
+      json = json_dumps(jdata, 0);
+  }
 
-  ref = xstrlen (json);
-  *buffer = xmalloc (ref + 1); 
+  ref = xstrlen(json);
+  *buffer = xmalloc(ref + 1);
 
-  snprintf (*buffer, ref+1, "%s", json);
-  
+  snprintf(*buffer, ref + 1, "%s", json);
+
   xfree(json);
-  
+
   json_decref(jdata);
+ 
+  return nbmsg;
 }

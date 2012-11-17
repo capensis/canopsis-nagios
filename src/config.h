@@ -160,13 +160,13 @@
 #define PACKAGE_NAME "NEB2AMQP"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "NEB2AMQP 0.1a"
+#define PACKAGE_STRING "NEB2AMQP 0.2"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "neb2amqp"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.1a"
+#define PACKAGE_VERSION "0.2"
 
 /* Define as the return type of signal handlers (`int' or `void'). */
 #define RETSIGTYPE void
@@ -187,7 +187,7 @@
 #define TIME_WITH_SYS_TIME 1
 
 /* Version number of package */
-#define VERSION "0.1a"
+#define VERSION "0.2"
 
 /* Define for Solaris 2.5.1 so the uint32_t typedef from <sys/synch.h>,
    <pthread.h>, or <semaphore.h> is not used. If the typedef was allowed, the

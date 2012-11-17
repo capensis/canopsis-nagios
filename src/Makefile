@@ -26,8 +26,8 @@ SRCPATH=src
 
 CC=gcc
 MOD_CFLAGS=-fPIC
-CFLAGS=-g -O2 -DHAVE_CONFIG_H
-MOD_LDFLAGS=-shared -lstdc++
+CFLAGS=-g -DHAVE_CONFIG_H
+MOD_LDFLAGS=-shared
 #LDFLAGS=-L../lib/rabbitmq-c/librabbitmq/librabbitmq.la
 LDFLAGS=
 SOURCES=$(wildcard *.c ../lib/librabbitmq/*.c ../lib/jansson-2.3.1/src/*.c)

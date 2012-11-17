@@ -20,6 +20,7 @@
 #include "nagios.h"
 #include "module.h"
 #include "logger.h"
+#include "xutils.h"
 
 #include "json.h"
 #include "neb2amqp.h"
@@ -31,8 +32,26 @@ extern struct options g_options;
 
 int g_last_event_program_status = 0;
 
+// Define a macro that will handle the split of messages
+#define split_message(message,field)                                               \
+do {                                                                               \
+    temp = ((int)xstrlen(message)/left + 1);                                       \
+    i = 0;                                                                         \
+    while (i < temp) {                                                             \
+        nebstruct_service_check_data_update_json(&jdata, message, field, left, i); \
+        char *json = json_dumps(jdata, 0);                                         \
+        buffer = xmalloc (message_size + 1);                                       \
+        snprintf (buffer, message_size + 1, "%s", json);                           \
+        amqp_publish(key, buffer);                                                 \
+        xfree(buffer);                                                             \
+        xfree (json);                                                              \
+        i++;                                                                       \
+    }                                                                              \
+} while(0);
+
+
 int
-event_service_check (int event_type __attribute__ ((__unused__)), void *data)
+n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *data)
 {
   //logger(LG_DEBUG, "Event: event_host_check");
   nebstruct_service_check_data *c = (nebstruct_service_check_data *) data;
@@ -40,30 +59,60 @@ event_service_check (int event_type __attribute__ ((__unused__)), void *data)
   if (c->type == NEBTYPE_SERVICECHECK_PROCESSED)
     {
       //logger(LG_DEBUG, "SERVICECHECK_PROCESSED: %s->%s", c->host_name, c->service_description);
-
       char *buffer = NULL, *key = NULL;
-      
-      size_t l = strlen (g_options.connector) +
-                 strlen (g_options.eventsource_name) +
-                 strlen (c->host_name) +
-                 strlen (c->service_description) + 19; // "..check.ressource.." + \0 = 19 chars
 
-      nebstruct_service_check_data_to_json (&buffer, c);
+      size_t l = xstrlen(g_options.connector) +
+      xstrlen(g_options.eventsource_name) + xstrlen(c->host_name) + xstrlen(c->service_description) + 20;
+      // "..check.ressource.." + \0 = 20 chars
 
-      xalloca (key, xmin (g_options.max_size, (int) l) * sizeof (char));
-      
-      snprintf (key, xmin (g_options.max_size, (int) l), "%s.%s.check.resource.%s.%s", g_options.connector, g_options.eventsource_name, c->host_name, c->service_description);
+      json_t *jdata = NULL;
+      size_t message_size = 0;
 
-      amqp_publish (key, buffer);
+      int nbmsg = nebstruct_service_check_data_to_json(c, &jdata, &message_size); 
 
-      xfree (buffer);
+      // DO NOT FREE !!!
+      xalloca(key, xmin(g_options.max_size, (int)l) * sizeof(char));
+
+      snprintf(key, xmin(g_options.max_size, (int)l),
+                 "%s.%s.check.resource.%s.%s", g_options.connector,
+                 g_options.eventsource_name, c->host_name,
+                 c->service_description);
+
+      if (nbmsg == 1) {
+          char *json = json_dumps(jdata, 0);
+          buffer = xmalloc (message_size + 1);
+
+          snprintf (buffer, message_size + 1, "%s", json);
+
+          amqp_publish(key, buffer);
+
+//          fprintf (stdout, "msg: %s\n", buffer);
+
+          xfree(buffer);
+          xfree (json);
+      } else {
+          int left = g_options.max_size - (int)message_size;
+          size_t l_out = xstrlen(c->long_output);
+          size_t out = xstrlen(c->output);
+          size_t perf = xstrlen(c->perf_data);
+          int msgs = ((int)l_out/left + 1) + ((int)out/left + 1) + ((int)perf/left + 1);
+          n2a_logger(LG_INFO, "Data too long... sending %d messages for host: %s, service: %s", msgs, c->host_name, c->service_description);
+          int i, temp;
+          split_message(c->long_output, "long_output");
+          split_message(c->output, "output");
+          split_message(c->perf_data, "perf_data");
+      }
+
+      if (jdata != NULL)
+          json_decref (jdata);
+
     }
 
   return 0;
 }
 
 int
-event_host_check (int event_type __attribute__ ((__unused__)), void *data)
+n2a_event_host_check (int event_type __attribute__ ((__unused__)), void *data)
 {
   //logger(LG_DEBUG, "Event: event_service_check");
   nebstruct_host_check_data *c = (nebstruct_host_check_data *) data;
@@ -71,23 +120,22 @@ event_host_check (int event_type __attribute__ ((__unused__)), void *data)
   if (c->type == NEBTYPE_HOSTCHECK_PROCESSED)
     {
       //logger(LG_DEBUG, "HOSTCHECK_PROCESSED: %s", c->host_name);
-
       char *buffer = NULL, *key = NULL;
 
-      size_t l = xstrlen (g_options.connector) +
-                 xstrlen (g_options.eventsource_name) +
-                 xstrlen (c->host_name) +
-                 20;
-      
-      nebstruct_host_check_data_to_json (&buffer, c);
+      size_t l = xstrlen(g_options.connector) + xstrlen(g_options.eventsource_name) + xstrlen(c->host_name) + 20; 
 
-      xalloca (key, xmin (g_options.max_size, (int) l) * sizeof (char));
-      
-      snprintf (key, xmin (g_options.max_size, (int) l), "%s.%s.check.component.%s", g_options.connector, g_options.eventsource_name, c->host_name);
+//      nebstruct_host_check_data_to_json(&buffer, c); 
 
-      amqp_publish (key, buffer);
+      // DO NOT FREE !!!
+      xalloca(key, xmin(g_options.max_size, (int)l) * sizeof(char));
 
-      xfree (buffer);
+      snprintf(key, xmin(g_options.max_size, (int)l),
+                 "%s.%s.check.component.%s", g_options.connector,
+                 g_options.eventsource_name, c->host_name);
+
+//      amqp_publish(key, buffer);
+
+      xfree(buffer);
     }
 
   return 0;
@@ -138,7 +186,7 @@ event_acknowledgement (int event_type
   
   if (c->type == NEBTYPE_ACKNOWLEDGEMENT_ADD)
     {
-      logger(LG_DEBUG, "Event: event_acknowledgement ADD");
+      n2a_logger(LG_DEBUG, "Event: event_acknowledgement ADD");
 
       char buffer[AMQP_MSG_SIZE_MAX];
       //TODO
@@ -163,11 +211,11 @@ event_downtime (int event_type __attribute__ ((__unused__)), void *data)
   
   if (c->type == NEBTYPE_DOWNTIME_START)
     {
-      logger(LG_DEBUG, "Event: event_downtime START");
+      n2a_logger(LG_DEBUG, "Event: event_downtime START");
     }
   else if (c->type == NEBTYPE_DOWNTIME_STOP)
     {
-      logger(LG_DEBUG, "Event: event_downtime STOP");
+      n2a_logger(LG_DEBUG, "Event: event_downtime STOP");
     }
 
   if (c->type == NEBTYPE_DOWNTIME_START || c->type == NEBTYPE_DOWNTIME_STOP)
@@ -189,11 +237,11 @@ event_comment (int event_type __attribute__ ((__unused__)), void *data)
   
   if (c->type == NEBTYPE_COMMENT_ADD)
     {
-      logger(LG_DEBUG, "Event: event_comment ADD");
+      n2a_logger(LG_DEBUG, "Event: event_comment ADD");
     }
   else if (c->type == NEBTYPE_COMMENT_DELETE)
     {
-      logger(LG_DEBUG, "Event: event_comment DELETE");
+      n2a_logger(LG_DEBUG, "Event: event_comment DELETE");
     }
 
   if (c->type == NEBTYPE_COMMENT_ADD || c->type == NEBTYPE_COMMENT_DELETE)

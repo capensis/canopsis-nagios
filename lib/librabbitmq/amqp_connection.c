@@ -1,50 +1,45 @@
 /*
  * ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0
+ * Version: MIT
  *
- * The contents of this file are subject to the Mozilla Public License
- * Version 1.1 (the "License"); you may not use this file except in
- * compliance with the License. You may obtain a copy of the License
- * at http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS"
- * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
- * the License for the specific language governing rights and
- * limitations under the License.
- *
- * The Original Code is librabbitmq.
- *
- * The Initial Developer of the Original Code is VMware, Inc.
- * Portions created by VMware are Copyright (c) 2007-2011 VMware, Inc.
+ * Portions created by VMware are Copyright (c) 2007-2012 VMware, Inc.
+ * All Rights Reserved.
  *
  * Portions created by Tony Garnock-Jones are Copyright (c) 2009-2010
- * VMware, Inc. and Tony Garnock-Jones.
+ * VMware, Inc. and Tony Garnock-Jones. All Rights Reserved.
  *
- * All rights reserved.
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies
+ * of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * Alternatively, the contents of this file may be used under the terms
- * of the GNU General Public License Version 2 or later (the "GPL"), in
- * which case the provisions of the GPL are applicable instead of those
- * above. If you wish to allow use of your version of this file only
- * under the terms of the GPL, and not to allow others to use your
- * version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the
- * notice and other provisions required by the GPL. If you do not
- * delete the provisions above, a recipient may use your version of
- * this file under the terms of any one of the MPL or the GPL.
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
  *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  * ***** END LICENSE BLOCK *****
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
-#include <assert.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
-#include "amqp.h"
-#include "amqp_framing.h"
 #include "amqp_private.h"
+#include <assert.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define INITIAL_FRAME_POOL_PAGE_SIZE 65536
 #define INITIAL_DECODING_POOL_PAGE_SIZE 131072
@@ -53,7 +48,7 @@
 #define ENFORCE_STATE(statevec, statenum)                               \
   {                                                                     \
     amqp_connection_state_t _check_state = (statevec);                  \
-    int _wanted_state = (statenum);                                     \
+    size_t _wanted_state = (statenum);                                  \
     if (_check_state->state != _wanted_state)                           \
       amqp_abort("Programming error: invalid AMQP connection state: expected %d, got %d", \
                 _wanted_state,                                          \
@@ -61,6 +56,7 @@
   }
 
 amqp_connection_state_t amqp_new_connection(void) {
+  int res;
   amqp_connection_state_t state =
     (amqp_connection_state_t) calloc(1, sizeof(struct amqp_connection_state_t_));
 
@@ -70,7 +66,10 @@ amqp_connection_state_t amqp_new_connection(void) {
   init_amqp_pool(&state->frame_pool, INITIAL_FRAME_POOL_PAGE_SIZE);
   init_amqp_pool(&state->decoding_pool, INITIAL_DECODING_POOL_PAGE_SIZE);
 
-  if (amqp_tune_connection(state, 0, INITIAL_FRAME_POOL_PAGE_SIZE, 0) != 0)
+  res = amqp_tune_connection(state, 0, INITIAL_FRAME_POOL_PAGE_SIZE, 0);
+  if (-ERROR_NO_MEMORY == res)
+    return NULL;
+  else if (0 != res)
     goto out_nomem;
 
   state->inbound_buffer.bytes = amqp_pool_alloc(&state->frame_pool, state->inbound_buffer.len);
@@ -414,7 +413,7 @@ int amqp_send_frame(amqp_connection_state_t state,
     amqp_e32(out_frame, 3, out_frame_len);
     amqp_e8(out_frame, out_frame_len + HEADER_SIZE, AMQP_FRAME_END);
     res = send(state->sockfd, out_frame,
-               out_frame_len + HEADER_SIZE + FOOTER_SIZE, 0);
+               out_frame_len + HEADER_SIZE + FOOTER_SIZE, MSG_NOSIGNAL);
   }
 
   if (res < 0)

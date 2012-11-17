@@ -3,43 +3,43 @@
 
 /*
  * ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0
+ * Version: MIT
  *
- * The contents of this file are subject to the Mozilla Public License
- * Version 1.1 (the "License"); you may not use this file except in
- * compliance with the License. You may obtain a copy of the License
- * at http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS"
- * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
- * the License for the specific language governing rights and
- * limitations under the License.
- *
- * The Original Code is librabbitmq.
- *
- * The Initial Developer of the Original Code is VMware, Inc.
- * Portions created by VMware are Copyright (c) 2007-2011 VMware, Inc.
+ * Portions created by VMware are Copyright (c) 2007-2012 VMware, Inc.
+ * All Rights Reserved.
  *
  * Portions created by Tony Garnock-Jones are Copyright (c) 2009-2010
- * VMware, Inc. and Tony Garnock-Jones.
+ * VMware, Inc. and Tony Garnock-Jones. All Rights Reserved.
  *
- * All rights reserved.
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies
+ * of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * Alternatively, the contents of this file may be used under the terms
- * of the GNU General Public License Version 2 or later (the "GPL"), in
- * which case the provisions of the GPL are applicable instead of those
- * above. If you wish to allow use of your version of this file only
- * under the terms of the GPL, and not to allow others to use your
- * version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the
- * notice and other provisions required by the GPL. If you do not
- * delete the provisions above, a recipient may use your version of
- * this file under the terms of any one of the MPL or the GPL.
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
  *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  * ***** END LICENSE BLOCK *****
  */
 
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
+#include "amqp.h"
+#include "amqp_framing.h"
+#include <string.h>
 
 /* Error numbering: Because of differences in error numbering on
  * different platforms, we want to keep error numbers opaque for
@@ -63,7 +63,23 @@
 #define ERROR_BAD_AMQP_URL 8
 #define ERROR_MAX 8
 
-extern char *amqp_os_error_string(int err);
+/* GCC attributes */
+#if __GNUC__ > 2 | (__GNUC__ == 2 && __GNUC_MINOR__ > 4)
+#define AMQP_NORETURN \
+  __attribute__ ((__noreturn__))
+#else
+#define AMQP_NORETURN
+#endif
+
+#if __GNUC__ >= 4
+#define AMQP_PRIVATE \
+  __attribute__ ((visibility ("hidden")))
+#else
+#define AMQP_PRIVATE
+#endif
+
+char *
+amqp_os_error_string(int err);
 
 #include "socket.h"
 
@@ -224,8 +240,10 @@ static inline uint64_t func##ll(uint64_t val)     \
 
 #endif
 
+#ifndef __sun
 DECLARE_XTOXLL(hton)
 DECLARE_XTOXLL(ntoh)
+#endif
 
 DECLARE_CODEC_BASE_TYPE(8, (uint8_t), (uint8_t))
 DECLARE_CODEC_BASE_TYPE(16, htons, ntohs)
@@ -259,6 +277,8 @@ static inline int amqp_decode_bytes(amqp_bytes_t encoded, size_t *offset,
   }
 }
 
-extern void amqp_abort(const char *fmt, ...);
+AMQP_NORETURN
+void
+amqp_abort(const char *fmt, ...);
 
 #endif
