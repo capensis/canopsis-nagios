@@ -32,6 +32,8 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#else
+#define VERSION "0.2.0"
 #endif
 
 #include "amqp_private.h"
