@@ -31,7 +31,7 @@
 #include <amqp_private.h>
 
 #include "neb2amqp.h"
-
+#include "cache.h"
 #include "module.h"
 #include "logger.h"
 
@@ -131,15 +131,14 @@ amqp_connect (void)
   if (amqp_lastconnect == 0)
     amqp_lastconnect = now - amqp_wait_time - 5;
 
-  if (!amqp_connected && (amqp_lastconnect + amqp_wait_time) <= now)
+  if (!amqp_connected && (now - amqp_lastconnect) >= amqp_wait_time)
     {
 
-      amqp_lastconnect = now;
 
       if (conn)
 	{
-		amqp_destroy_connection(conn);
-		amqp_socket_close(sockfd);
+      amqp_destroy_connection(conn);
+      amqp_socket_close(sockfd);
 	}
 	  
       n2a_logger (LG_INFO, "AMQP: Opening socket");
@@ -172,6 +171,8 @@ amqp_connect (void)
 	{
 	  n2a_logger (LG_INFO, "AMQP: Successfully connected");
 	  amqp_connected = true;
+      amqp_lastconnect = now;
+      n2a_pop_all_cache ();
 	}
 
     }
@@ -209,9 +210,10 @@ amqp_disconnect (void)
     }
 }
 
-void
+int
 amqp_publish (const char *routingkey, const char *message)
 {
+  n2a_flush_cache (FALSE);
 
   if (! amqp_connected)
 	amqp_connect ();
@@ -236,12 +238,16 @@ amqp_publish (const char *routingkey, const char *message)
 
       if (amqp_errors)
 		{
-		//TODO: re-queue event
+     n2a_record_cache (routingkey, message);
 	 n2a_logger (LG_INFO, "AMQP: Error on publish");
-		amqp_disconnect ();
-	 n2a_logger (LG_INFO, "AMQP: Try to reconnect ...");
-		amqp_connect ();
+     amqp_disconnect ();
+     return -1;
 		}
+      return 0;
     }
-
+  else
+    {
+      n2a_record_cache (routingkey, message);
+      return -1;
+    }
 }
