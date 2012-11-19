@@ -290,6 +290,7 @@ int iniparser_find_entry(dictionary * ini, const char * entry) ;
  */
 /*--------------------------------------------------------------------------*/
 dictionary * iniparser_load(const char * ininame);
+dictionary * iniparser_load_fd(FILE * ininame);
 
 /*-------------------------------------------------------------------------*/
 /**

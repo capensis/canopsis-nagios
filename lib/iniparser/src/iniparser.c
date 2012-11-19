@@ -11,7 +11,7 @@
 #include "iniparser.h"
 
 /*---------------------------- Defines -------------------------------------*/
-#define ASCIILINESZ         (1024)
+#define ASCIILINESZ         (10240)
 #define INI_INVALID_KEY     ((char*)-1)
 
 /*---------------------------------------------------------------------------
@@ -626,10 +626,9 @@ static line_status iniparser_line(
   The returned dictionary must be freed using iniparser_freedict().
  */
 /*--------------------------------------------------------------------------*/
-dictionary * iniparser_load(const char * ininame)
+//dictionary * iniparser_load(const char * ininame)
+dictionary * iniparser_load_fd(FILE * in)
 {
-    FILE * in ;
-
     char line    [ASCIILINESZ+1] ;
     char section [ASCIILINESZ+1] ;
     char key     [ASCIILINESZ+1] ;
@@ -642,15 +641,15 @@ dictionary * iniparser_load(const char * ininame)
     int  errs=0;
 
     dictionary * dict ;
-
+/*
     if ((in=fopen(ininame, "r"))==NULL) {
         fprintf(stderr, "iniparser: cannot open %s\n", ininame);
         return NULL ;
     }
-
+*/
     dict = dictionary_new(0) ;
     if (!dict) {
-        fclose(in);
+/*        fclose(in);*/
         return NULL ;
     }
 
@@ -668,11 +667,10 @@ dictionary * iniparser_load(const char * ininame)
         /* Safety check against buffer overflows */
         if (line[len]!='\n' && !feof(in)) {
             fprintf(stderr,
-                    "iniparser: input line too long in %s (%d)\n",
-                    ininame,
+                    "iniparser: input line too long (%d)\n",
                     lineno);
             dictionary_del(dict);
-            fclose(in);
+/*            fclose(in);*/
             return NULL ;
         }
         /* Get rid of \n and spaces at end of line */
@@ -704,8 +702,7 @@ dictionary * iniparser_load(const char * ininame)
             break ;
 
             case LINE_ERROR:
-            fprintf(stderr, "iniparser: syntax error in %s (%d):\n",
-                    ininame,
+            fprintf(stderr, "iniparser: syntax error (%d):\n",
                     lineno);
             fprintf(stderr, "-> %s\n", line);
             errs++ ;
@@ -725,10 +722,22 @@ dictionary * iniparser_load(const char * ininame)
         dictionary_del(dict);
         dict = NULL ;
     }
-    fclose(in);
+/*    fclose(in);*/
     return dict ;
 }
 
+dictionary * iniparser_load(const char * ininame)
+{
+    FILE * in;
+    dictionary *dict = NULL;
+    if ((in=fopen(ininame, "r"))==NULL) {
+        fprintf(stderr, "iniparser: cannot open %s\n", ininame);
+        return NULL ;
+    }
+    dict = iniparser_load_fd(in);
+    fclose (in);
+    return dict;
+}
 /*-------------------------------------------------------------------------*/
 /**
   @brief    Free all memory associated to an ini dictionary
