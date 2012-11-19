@@ -32,6 +32,9 @@ struct options {
 	char *hostname;
 	int port;
     int max_size;
+    int cache_size;
+    int autoflush;
+    char *cache_file;
 	char *userid;
 	char *password;
 	char *virtual_host;

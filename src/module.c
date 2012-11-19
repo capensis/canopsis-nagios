@@ -23,7 +23,7 @@
 
 #include "broker.h"
 #include "neb2amqp.h"
-
+#include "cache.h"
 #include "module.h"
 
 NEB_API_VERSION (CURRENT_NEB_API_VERSION)
@@ -55,6 +55,9 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
   g_options.log_level = 0;
   g_options.connector = "nagios";
   g_options.max_size = 8192;
+  g_options.cache_size = 500;
+  g_options.autoflush = 60;
+  g_options.cache_file = "/usr/local/nagios/var/canopsis.cache";
 
   // Parse module options
   n2a_parse_arguments (args);
@@ -74,6 +77,8 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
 
   register_callbacks ();
 
+  n2a_init_cache ();
+
   n2a_logger (LG_INFO, "successfully finished initialization");
 
   return 0;
@@ -86,6 +91,7 @@ nebmodule_deinit (int flags __attribute__ ((__unused__)), int reason
   n2a_logger (LG_INFO, "deinitializing");
   
   deregister_callbacks ();
+  n2a_clear_cache ();
   amqp_disconnect ();
  
   xfree (g_args);
@@ -140,6 +146,24 @@ n2a_parse_arguments (const char *args_orig)
           g_options.max_size = strtol(right, NULL, 10);
           n2a_logger (LG_DEBUG, "Setting max_size buffer to %d bits",
               g_options.max_size);
+        }
+      else if (strcmp(left, "cache_size") == 0)
+        {
+          g_options.cache_size = strtol(right, NULL, 10);
+          n2a_logger (LG_DEBUG, "Setting cache_size to %d",
+              g_options.cache_size);
+        }
+      else if (strcmp(left, "cache_file") == 0)
+        {
+          g_options.cache_file = right;
+          n2a_logger (LG_DEBUG, "Setting cache_file to '%s'",
+              g_options.cache_file);
+        }
+      else if (strcmp(left, "autoflush") == 0)
+        {
+          g_options.autoflush = strtol(right, NULL, 10);
+          n2a_logger (LG_DEBUG, "Setting autoflush to %ds",
+              g_options.autoflush);
         }
 	  else if (strcmp (left, "name") == 0)
 	    {
