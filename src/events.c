@@ -40,8 +40,9 @@ do {                                                                            
     while (i < temp) {                                                             \
         nebstruct_service_check_data_update_json(&jdata, message, field, left, i); \
         char *json = json_dumps(jdata, 0);                                         \
-        buffer = xmalloc (message_size + 1);                                       \
-        snprintf (buffer, message_size + 1, "%s", json);                           \
+        size_t len = xstrlen (json);                                               \
+        buffer = xmalloc (len + 1);                                                \
+        snprintf (buffer, len + 1, "%s", json);                                    \
         amqp_publish(key, buffer);                                                 \
         xfree(buffer);                                                             \
         xfree (json);                                                              \
@@ -85,8 +86,6 @@ n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *data
           snprintf (buffer, message_size + 1, "%s", json);
 
           amqp_publish(key, buffer);
-
-//          fprintf (stdout, "msg: %s\n", buffer);
 
           xfree(buffer);
           xfree (json);
