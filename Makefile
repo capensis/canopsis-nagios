@@ -31,7 +31,8 @@ SUFFIXES = .o .c .h .a .so
 
 # Ar settings to build the library
 AR      = ar
-ARFLAGS = cq
+#ARFLAGS = cq
+ARFLAGS = rcv
 
 RM      = rm -f
 ECHO    = echo
