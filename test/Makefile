@@ -45,5 +45,5 @@ test:
 clean:
 	rm -f test
 
-install:
-
+ini:
+	gcc -g -o testini -I../lib/iniparser/src ../lib/iniparser/src/*.c ini.c
