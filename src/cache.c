@@ -174,8 +174,22 @@ static int compare (const void * a, const void * b)
 {
     /* The pointers point to offsets into "array", so we need to
        dereference them to get at the strings. */
+    const char *aa, *bb;
+    aa = *(const char **) a;
+    bb = *(const char **) b;
+    int ret = 0;
+    if (strncmp (aa, bb, 8) != 0) {
+        ret = strcmp (aa, bb);
+    } else {
+        char *aptr = strchr (aa, '_');
+        char *bptr = strchr (bb, '_');
+        int ia, ib;
+        ia = strtol (aptr+1, NULL, 10);
+        ib = strtol (bptr+1, NULL, 10);
+        ret = ia - ib;
+    }
 
-   return strcmp (*(const char **) a, *(const char **) b);
+    return ret;
 }
 
 void
