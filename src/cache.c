@@ -154,7 +154,7 @@ void
 n2a_record_cache (const char *key, const char *message)
 {
     char index[256];
-    int count;
+    int count, id = 1;
     /* avoid caching the message twice */
     if (ini_lock)
         return;
@@ -163,11 +163,18 @@ n2a_record_cache (const char *key, const char *message)
         n2a_logger (LG_CRIT, "cache size exceded! Unable to cache new messages");
         return;
     }
-    snprintf (index, 256, "cache:key_%d", count+1);
+    /* search an empty id */
+    for (;;id++) {
+        char idx[256];
+        snprintf (idx, 256, "cache:key_%d", id);
+        if (iniparser_getstring (ini, idx, NULL) == NULL)
+            break;
+    }
+    snprintf (index, 256, "cache:key_%d", id);
     iniparser_set (ini, index, key);
-    snprintf (index, 256, "cache:message_%d", count+1);
+    snprintf (index, 256, "cache:message_%d", id);
     iniparser_set (ini, index, message);
-    n2a_logger (LG_INFO, "add message in cache: '%s'", key);
+    n2a_logger (LG_INFO, "add message in cache: '%s' (%d)", key, id);
 }
 
 static int compare (const void * a, const void * b)
