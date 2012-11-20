@@ -172,7 +172,7 @@ amqp_connect (void)
 	  n2a_logger (LG_INFO, "AMQP: Successfully connected");
 	  amqp_connected = true;
       amqp_lastconnect = now;
-      n2a_pop_all_cache ();
+      n2a_pop_all_cache (TRUE);
 	}
 
     }
@@ -235,6 +235,8 @@ amqp_publish (const char *routingkey, const char *message)
 				    amqp_cstring_bytes (message));
 				    
       on_error (result, "Publishing");
+
+      n2a_pop_all_cache (FALSE);
 
       if (amqp_errors)
 		{

@@ -45,5 +45,6 @@ void n2a_record_cache (const char *key, const char *message);
  * this function depiles the messages already stored in memory and resent them
  * to the AMQP bus.
  * note: when one send fails, we stop the depiling process until next time...
+ * @param force: if TRUE force depiling, else wait for 'autoflush' seconds
  */
-void n2a_pop_all_cache (void); 
+void n2a_pop_all_cache (unsigned int force); 

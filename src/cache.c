@@ -37,7 +37,32 @@ extern struct options g_options;
 static dictionary *ini = NULL;
 static unsigned int dbsetup = FALSE;
 static time_t last_flush = 0;
+static time_t last_pop = 0;
 static unsigned int ini_lock = FALSE;
+static int lastid = 1;
+static unsigned int pop_lock = FALSE;
+
+static int compare (const void * a, const void * b)
+{
+    /* The pointers point to offsets into "array", so we need to
+       dereference them to get at the strings. */
+    const char *aa, *bb;
+    aa = *(const char **) a;
+    bb = *(const char **) b;
+    int ret = 0;
+    if (strncmp (aa, bb, 8) != 0) {
+        ret = strcmp (aa, bb);
+    } else {
+        char *aptr = strchr (aa, '_');
+        char *bptr = strchr (bb, '_');
+        int ia, ib;
+        ia = strtol (aptr+1, NULL, 10);
+        ib = strtol (bptr+1, NULL, 10);
+        ret = ia - ib;
+    }
+
+    return ret;
+}
 
 static unsigned int
 file_exists (const char *file)
@@ -121,6 +146,18 @@ n2a_init_cache (void)
         return;
     }
 
+    int n = iniparser_getsecnkeys (ini, "cache");
+    if (n > 0) {
+        char **keys = iniparser_getseckeys (ini, "cache");
+        /* sort the returned keys */
+        qsort (keys, (size_t) n, sizeof (char *), compare);
+        char *index_key = keys[n-1];
+        /* then free the list although the doc says not to... */
+        xfree (keys);
+        char *m = strchr (index_key, '_');
+        lastid = strtol (m+1, NULL, 10);
+    }
+
     dbsetup = TRUE;
 }
 
@@ -154,57 +191,37 @@ void
 n2a_record_cache (const char *key, const char *message)
 {
     char index[256];
-    int count, id = 1;
     /* avoid caching the message twice */
     if (ini_lock)
         return;
-    count = iniparser_getsecnkeys (ini, "cache") / 2;
-    if (count > g_options.cache_size) {
-        n2a_logger (LG_CRIT, "cache size exceded! Unable to cache new messages");
-        return;
-    }
-    /* search an empty id */
-    for (;;id++) {
-        char idx[256];
-        snprintf (idx, 256, "cache:key_%d", id);
-        if (iniparser_getstring (ini, idx, NULL) == NULL)
-            break;
-    }
-    snprintf (index, 256, "cache:key_%d", id);
+    lastid++;
+    snprintf (index, 256, "cache:key_%d", lastid);
     iniparser_set (ini, index, key);
-    snprintf (index, 256, "cache:message_%d", id);
+    snprintf (index, 256, "cache:message_%d", lastid);
     iniparser_set (ini, index, message);
-    n2a_logger (LG_INFO, "add message in cache: '%s' (%d)", key, id);
-}
-
-static int compare (const void * a, const void * b)
-{
-    /* The pointers point to offsets into "array", so we need to
-       dereference them to get at the strings. */
-    const char *aa, *bb;
-    aa = *(const char **) a;
-    bb = *(const char **) b;
-    int ret = 0;
-    if (strncmp (aa, bb, 8) != 0) {
-        ret = strcmp (aa, bb);
-    } else {
-        char *aptr = strchr (aa, '_');
-        char *bptr = strchr (bb, '_');
-        int ia, ib;
-        ia = strtol (aptr+1, NULL, 10);
-        ib = strtol (bptr+1, NULL, 10);
-        ret = ia - ib;
-    }
-
-    return ret;
+    n2a_logger (LG_INFO, "add message in cache: '%s' (%d)", key, lastid);
 }
 
 void
-n2a_pop_all_cache (void)
+n2a_pop_all_cache (unsigned int force)
 {
-    int i = 0;
+    time_t now = 0;
+    if (pop_lock)
+        return;
+    if (g_options.autoflush < 0 && !force)
+        return;
+    if (g_options.autoflush == 0)
+        goto do_it;
+    now = time (NULL);
+    if ((int) difftime (now, last_pop) < g_options.autoflush)
+        return;
+
+do_it:
+    last_pop = now;
+    int r = 0;
     int n;
-    for (; i < ((n = iniparser_getsecnkeys (ini, "cache")) / 2); i++) {
+    pop_lock = TRUE;
+    while (r == 0 && ((n = iniparser_getsecnkeys (ini, "cache")) / 2) > 0) {
         char **keys = iniparser_getseckeys (ini, "cache");
         /* sort the returned keys */
         qsort (keys, (size_t) n, sizeof (char *), compare);
@@ -229,4 +246,7 @@ n2a_pop_all_cache (void)
         n2a_logger (LG_INFO, "cache successfuly purged from message '%s'",
         index_message);
     }
+    pop_lock = FALSE;
+    if (r == 0)
+        lastid = 1;
 }
