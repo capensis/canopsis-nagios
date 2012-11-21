@@ -166,7 +166,7 @@
 #define PACKAGE_TARNAME "neb2amqp"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.2"
+#define PACKAGE_VERSION "0.3-rc"
 
 /* Define as the return type of signal handlers (`int' or `void'). */
 #define RETSIGTYPE void

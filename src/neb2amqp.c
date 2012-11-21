@@ -233,10 +233,8 @@ amqp_publish (const char *routingkey, const char *message)
 				    0,
 				    &props,
 				    amqp_cstring_bytes (message));
-				    
-      on_error (result, "Publishing");
 
-      n2a_pop_all_cache (FALSE);
+      on_error (result, "Publishing");
 
       if (amqp_errors)
 		{
@@ -245,6 +243,9 @@ amqp_publish (const char *routingkey, const char *message)
      amqp_disconnect ();
      return -1;
 		}
+      
+      n2a_pop_all_cache (FALSE);
+      
       return 0;
     }
   else

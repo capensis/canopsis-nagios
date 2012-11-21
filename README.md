@@ -54,6 +54,8 @@ Options:
     connector =     Connector name (nagios) (you can type "icinga" for icinga)
     max_size =      Maximum message size to send to the AMQP bus (8192)
     cache_file =    File in which faulty messages are stored (/usr/local/nagios/var/canopsis.cache)
+                    (note: if we cannot read/create the file, the cache will
+                    only run in memory)
     cache_size =    Number of messages to store in cache (500)
     autoflush =     Delay in seconds between two automatic flush of the cache into 'cache_file'.
                     If < 0 disable autoflush (note: the cache will always be stored when the module
