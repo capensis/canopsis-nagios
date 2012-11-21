@@ -142,7 +142,7 @@ n2a_init_cache (void)
     }
 
     if (ini==NULL) {
-        n2a_logger (LG_CRIT, "cannot parse file: %s\n", g_options.cache_file);
+        n2a_logger (LG_CRIT, "cannot parse file: %s", g_options.cache_file);
         return;
     }
 
@@ -156,6 +156,7 @@ n2a_init_cache (void)
         xfree (keys);
         char *m = strchr (index_key, '_');
         lastid = strtol (m+1, NULL, 10);
+        n2a_logger (LG_INFO, "retrieved %d messages from cache", n/2);
     }
 
     dbsetup = TRUE;
@@ -208,10 +209,13 @@ n2a_pop_all_cache (unsigned int force)
     time_t now = 0;
     if (pop_lock)
         return;
+
     if (g_options.autoflush < 0 && !force)
         return;
+
     if (g_options.autoflush == 0)
         goto do_it;
+
     now = time (NULL);
     if ((int) difftime (now, last_pop) < g_options.autoflush)
         return;
@@ -219,9 +223,37 @@ n2a_pop_all_cache (unsigned int force)
 do_it:
     last_pop = now;
     int r = 0;
-    int n;
+    int n = iniparser_getsecnkeys (ini, "cache");
+    int storm, cpt = 0;
+    size_t l;
+    char convert[128];
+    if ((n / 2) <= 0)
+        return;
+    snprintf (convert, 128, "%d", n);
+    /* in order to avoid flush storming the AMQP bus, evaluate the number of
+     * messages to flush */
+    switch ((l = xstrlen (convert))) {
+        case 1:
+        case 2:
+            storm = n/2;
+            break;
+        case 3:
+            storm = n/4;
+            break;
+        case 4:
+            storm = n/20;
+            break;
+        case 5:
+            storm = n/200;
+            break;
+        default:
+            storm = n/(20 * (10^(l-3)));
+            break;
+    }
+    n2a_logger (LG_INFO, "depiling %d/%d messages from cache", storm, n/2);
+
     pop_lock = TRUE;
-    while (r == 0 && ((n = iniparser_getsecnkeys (ini, "cache")) / 2) > 0) {
+    do {
         char **keys = iniparser_getseckeys (ini, "cache");
         /* sort the returned keys */
         qsort (keys, (size_t) n, sizeof (char *), compare);
@@ -243,10 +275,14 @@ do_it:
         }
         iniparser_unset (ini, index_key);
         iniparser_unset (ini, index_message);
-        n2a_logger (LG_INFO, "cache successfuly purged from message '%s'",
-        index_message);
-    }
+        cpt++;
+        n2a_logger (LG_INFO, "cache successfuly purged from message '%s' (%d/%d)",
+        index_message, cpt, storm);
+        if (cpt > storm)
+            break;
+    } while (r == 0 && ((n = iniparser_getsecnkeys (ini, "cache")) / 2) > 0);
     pop_lock = FALSE;
-    if (r == 0)
+    if (r == 0 && cpt < storm)
         lastid = 1;
+    last_pop = time (NULL);
 }
