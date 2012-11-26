@@ -176,6 +176,7 @@ amqp_connect (void)
 	}
 
     }
+    amqp_lastconnect = now;
 
 }
 
