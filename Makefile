@@ -62,8 +62,8 @@ librabbitmq.a: $(OBJS_RMQ)
 libiniparser.a: $(OBJS_INI)
 	@($(AR) $(ARFLAGS) libiniparser.a $(OBJS_INI))
 
-neb2amqp.o: libjansson.a librabbitmq.a libiniparser.a
-	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $(SRC_N2A) libjansson.a librabbitmq.a	libiniparser.a
+neb2amqp.o: $(SRC_N2A) libjansson.a librabbitmq.a libiniparser.a
+	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $^
 	@($(ECHO) "\n$@ compiled successfuly!")
 	
 
