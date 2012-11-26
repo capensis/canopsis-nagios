@@ -157,7 +157,7 @@ n2a_parse_arguments (const char *args_orig)
       else if (strcmp (left, "flush") == 0)
         {
           int r = strtol (right, NULL, 10);
-          if (r > 0) {
+          if (r > 0 || r == -1) {
               g_options.flush = r;
               n2a_logger (LG_DEBUG, "Setting flush to %d messages", r);
           } else {
