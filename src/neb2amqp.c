@@ -222,8 +222,9 @@ amqp_publish (const char *routingkey, const char *message)
   if (amqp_connected)
     {
       amqp_basic_properties_t props;
-      props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG;
-      props.content_type = amqp_cstring_bytes ("application/json; charset=utf-8");
+      props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG | AMQP_BASIC_CONTENT_ENCODING_FLAG;
+      props.content_type = amqp_cstring_bytes ("application/json");
+      props.content_encoding = amqp_cstring_bytes ("UTF-8");
       props.delivery_mode = 2;	/* persistent delivery mode */
       
      int result = amqp_basic_publish (conn,
