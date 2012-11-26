@@ -278,8 +278,9 @@ do_it:
         cpt++;
         n2a_logger (LG_INFO, "cache successfuly purged from message '%s' (%d/%d)",
         index_message, cpt, storm);
-        if (cpt > storm)
+        if (cpt >= storm)
             break;
+        usleep (g_options.rate);
     } while (r == 0 && ((n = iniparser_getsecnkeys (ini, "cache")) / 2) > 0);
     pop_lock = FALSE;
     if (r == 0 && cpt < storm)

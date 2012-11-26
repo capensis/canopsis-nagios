@@ -34,6 +34,7 @@ struct options {
     int max_size;
     int cache_size;
     int autoflush;
+    int rate;
     char *cache_file;
 	char *userid;
 	char *password;

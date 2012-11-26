@@ -57,6 +57,7 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
   g_options.max_size = 8192;
   g_options.cache_size = 500;
   g_options.autoflush = 60;
+  g_options.rate = 250000;
   g_options.cache_file = "/usr/local/nagios/var/canopsis.cache";
 
   // Parse module options
@@ -141,6 +142,17 @@ n2a_parse_arguments (const char *args_orig)
 	      g_options.log_level = strtol (right, NULL, 10);
 	      n2a_logger (LG_DEBUG, "Setting debug level to %d", g_options.log_level);
 	    }
+      else if (strcmp (left, "rate") == 0)
+        {
+          int r = strtol (right, NULL, 10);
+          if (r > 0) {
+              g_options.rate = r * 1000;
+              n2a_logger (LG_DEBUG, "Setting rate to %dms", r);
+          } else {
+              n2a_logger (LG_DEBUG, "Wrong value for option 'rate', leave it to %dms",
+                g_options.rate/1000);
+          }
+        }
       else if (strcmp(left, "max_size") == 0)
         {
           g_options.max_size = strtol(right, NULL, 10);
