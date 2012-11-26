@@ -58,6 +58,7 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
   g_options.cache_size = 500;
   g_options.autoflush = 60;
   g_options.rate = 250000;
+  g_options.flush = -1;
   g_options.cache_file = "/usr/local/nagios/var/canopsis.cache";
 
   // Parse module options
@@ -151,6 +152,17 @@ n2a_parse_arguments (const char *args_orig)
           } else {
               n2a_logger (LG_DEBUG, "Wrong value for option 'rate', leave it to %dms",
                 g_options.rate/1000);
+          }
+        }
+      else if (strcmp (left, "flush") == 0)
+        {
+          int r = strtol (right, NULL, 10);
+          if (r > 0) {
+              g_options.flush = r;
+              n2a_logger (LG_DEBUG, "Setting flush to %d messages", r);
+          } else {
+              n2a_logger (LG_DEBUG, "Wrong value for option 'flush', leave it to %d messages",
+                g_options.flush);
           }
         }
       else if (strcmp(left, "max_size") == 0)
