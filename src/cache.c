@@ -195,6 +195,22 @@ n2a_record_cache (const char *key, const char *message)
     /* avoid caching the message twice */
     if (ini_lock)
         return;
+    int n = iniparser_getsecnkeys (ini, "cache") / 2;
+    if (n > g_options.cache_size) {
+        n2a_logger (LG_CRIT, "cache size exceded! Replacing oldest messages");
+        char **keys = iniparser_getseckeys (ini, "cache");
+        /* sort the returned keys */
+        qsort (keys, (size_t) n, sizeof (char *), compare);
+        char *index_key = keys[0];
+        /* then free the list although the doc says not to... */
+        xfree (keys);
+        char *m = strchr (index_key, '_');
+        int first = strtol (m+1, NULL, 10);
+        snprintf (index, 256, "cache:key_%d", first);
+        iniparser_unset (ini, index);
+        snprintf (index, 256, "cache:message_%d", first);
+        iniparser_unset (ini, index);
+    }
     lastid++;
     snprintf (index, 256, "cache:key_%d", lastid);
     iniparser_set (ini, index, key);
@@ -288,7 +304,7 @@ proceed:
         usleep (g_options.rate);
     } while (r == 0 && ((n = iniparser_getsecnkeys (ini, "cache")) / 2) > 0);
     pop_lock = FALSE;
-    if (r == 0 && cpt < storm)
-        lastid = 1;
+    if (r == 0 && (n / 2) == 0)
+        lastid = 0;
     last_pop = time (NULL);
 }
