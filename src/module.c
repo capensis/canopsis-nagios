@@ -57,6 +57,7 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
   g_options.max_size = 8192;
   g_options.cache_size = 500;
   g_options.autoflush = 60;
+  g_options.autopop = 60;
   g_options.rate = 250000;
   g_options.flush = -1;
   g_options.cache_file = "/usr/local/nagios/var/canopsis.cache";
@@ -170,6 +171,11 @@ n2a_parse_arguments (const char *args_orig)
           g_options.max_size = strtol(right, NULL, 10);
           n2a_logger (LG_DEBUG, "Setting max_size buffer to %d bits",
               g_options.max_size);
+        }
+      else if (strcmp (left, "autopop") == 0)
+        {
+          g_options.autopop = strtol (right, NULL, 10);
+          n2a_logger (LG_DEBUG, "Setting autopop to %ds", g_options.autopop);
         }
       else if (strcmp(left, "cache_size") == 0)
         {

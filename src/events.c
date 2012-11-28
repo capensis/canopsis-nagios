@@ -46,8 +46,10 @@ do {                                                                            
         snprintf (buffer, len + 1, "%s", json);                                    \
         if (c_size == -10000 || c_size / 2 == 0)                                   \
             amqp_publish(key, buffer);                                             \
-        else                                                                       \
+        else {                                                                     \
             n2a_record_cache (key, buffer);                                        \
+            n2a_pop_all_cache (FALSE);                                             \
+        }                                                                          \
         xfree(buffer);                                                             \
         xfree (json);                                                              \
         i++;                                                                       \
@@ -91,8 +93,10 @@ n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *data
 
           if (c_size == -10000 || c_size / 2 == 0) 
               amqp_publish(key, buffer);
-          else
+          else {
               n2a_record_cache (key, buffer);
+              n2a_pop_all_cache (FALSE);
+          }
 
           xfree(buffer);
           xfree (json);
@@ -130,7 +134,7 @@ n2a_event_host_check (int event_type __attribute__ ((__unused__)), void *data)
 
       size_t l = xstrlen(g_options.connector) + xstrlen(g_options.eventsource_name) + xstrlen(c->host_name) + 20; 
 
-//      nebstruct_host_check_data_to_json(&buffer, c); 
+      nebstruct_host_check_data_to_json(&buffer, c); 
 
       // DO NOT FREE !!!
       xalloca(key, xmin(g_options.max_size, (int)l) * sizeof(char));
@@ -141,8 +145,10 @@ n2a_event_host_check (int event_type __attribute__ ((__unused__)), void *data)
 
       if (c_size == -10000 || c_size / 2 == 0)
           amqp_publish(key, buffer);
-      else
+      else {
           n2a_record_cache (key, buffer);
+          n2a_pop_all_cache (FALSE);
+      }
 
       xfree(buffer);
     }

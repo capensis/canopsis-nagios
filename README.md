@@ -61,6 +61,8 @@ Options:
                     If < 0 disable autoflush (note: the cache will always be stored when the module
                     is unloaded). If = 0 cache every time (this is not recommended as it may consumes
                     lot of I/O) (default: 60)
+    autopop =       Delay in seconds between two automatic flush of the cache into the AMQP bus
+                    if it is available (60)
     rate =          Delay in ms between two messages when depiling (250)
     flush =         Number of messages to send when depiling (-1: means it is calculated at runtime)
 

@@ -228,14 +228,14 @@ n2a_pop_all_cache (unsigned int force)
     if (pop_lock)
         return;
 
-    if (g_options.autoflush < 0 && !force)
+    if (g_options.autopop < 0 && !force)
         return;
 
-    if (g_options.autoflush == 0)
+    if (g_options.autopop == 0)
         goto do_it;
 
     now = time (NULL);
-    if ((int) difftime (now, last_pop) < g_options.autoflush)
+    if ((int) difftime (now, last_pop) < g_options.autopop)
         return;
 
 do_it:
