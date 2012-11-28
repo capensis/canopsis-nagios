@@ -41,6 +41,8 @@ static time_t last_pop = 0;
 static unsigned int ini_lock = FALSE;
 static int lastid = 1;
 static unsigned int pop_lock = FALSE;
+static const char *tkey = NULL, *tmsg = NULL;
+int c_size = -10000;
 
 static int compare (const void * a, const void * b)
 {
@@ -193,7 +195,7 @@ n2a_record_cache (const char *key, const char *message)
 {
     char index[256];
     /* avoid caching the message twice */
-    if (ini_lock)
+    if (key == tkey && message == tmsg)
         return;
     int n = iniparser_getsecnkeys (ini, "cache") / 2;
     if (n > g_options.cache_size) {
@@ -239,45 +241,45 @@ n2a_pop_all_cache (unsigned int force)
 do_it:
     last_pop = now;
     int r = 0;
-    int n = iniparser_getsecnkeys (ini, "cache");
+    c_size = iniparser_getsecnkeys (ini, "cache");
     int storm, cpt = 0;
     size_t l;
     char convert[128];
-    if ((n / 2) <= 0)
+    if ((c_size / 2) <= 0)
         return;
     if (g_options.flush > 0) {
-        storm = xmin (n/2, g_options.flush);
+        storm = xmin (c_size/2, g_options.flush);
         goto proceed;
     }
-    snprintf (convert, 128, "%d", n);
+    snprintf (convert, 128, "%d", c_size);
     /* in order to avoid flush storming the AMQP bus, evaluate the number of
      * messages to flush */
     switch ((l = xstrlen (convert))) {
         case 1:
         case 2:
-            storm = n/2;
+            storm = c_size/2;
             break;
         case 3:
-            storm = n/4;
+            storm = c_size/4;
             break;
         case 4:
-            storm = n/20;
+            storm = c_size/20;
             break;
         case 5:
-            storm = n/200;
+            storm = c_size/200;
             break;
         default:
-            storm = n/(20 * (10^(l-3)));
+            storm = c_size/(20 * (10^(l-3)));
             break;
     }
 proceed:
-    n2a_logger (LG_INFO, "depiling %d/%d messages from cache", storm, n/2);
+    n2a_logger (LG_INFO, "depiling %d/%d messages from cache", storm, c_size/2);
 
     pop_lock = TRUE;
     do {
         char **keys = iniparser_getseckeys (ini, "cache");
         /* sort the returned keys */
-        qsort (keys, (size_t) n, sizeof (char *), compare);
+        qsort (keys, (size_t) c_size, sizeof (char *), compare);
         char *index_key = keys[0];
         /* then free the list although the doc says not to... */
         xfree (keys);
@@ -287,6 +289,8 @@ proceed:
         ini_lock = TRUE;
         char *key = iniparser_getstring (ini, index_key, NULL);
         char *message = iniparser_getstring (ini, index_message, NULL);
+        tkey = key;
+        tmsg = message;
         int r = amqp_publish (key, message);
         ini_lock = FALSE;
         if (r < 0) {
@@ -302,9 +306,9 @@ proceed:
         if (cpt >= storm)
             break;
         usleep (g_options.rate);
-    } while (r == 0 && ((n = iniparser_getsecnkeys (ini, "cache")) / 2) > 0);
+    } while (r == 0 && ((c_size = iniparser_getsecnkeys (ini, "cache")) / 2) > 0);
     pop_lock = FALSE;
-    if (r == 0 && (n / 2) == 0)
+    if (r == 0 && (c_size / 2) == 0)
         lastid = 0;
     last_pop = time (NULL);
 }

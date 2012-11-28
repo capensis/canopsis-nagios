@@ -29,6 +29,7 @@
 #include "events.h"
 
 extern struct options g_options;
+extern int c_size;
 
 int g_last_event_program_status = 0;
 
@@ -43,7 +44,10 @@ do {                                                                            
         size_t len = xstrlen (json);                                               \
         buffer = xmalloc (len + 1);                                                \
         snprintf (buffer, len + 1, "%s", json);                                    \
-        amqp_publish(key, buffer);                                                 \
+        if (c_size == -10000 || c_size / 2 == 0)                                   \
+            amqp_publish(key, buffer);                                             \
+        else                                                                       \
+            n2a_record_cache (key, buffer);                                        \
         xfree(buffer);                                                             \
         xfree (json);                                                              \
         i++;                                                                       \
@@ -85,7 +89,10 @@ n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *data
 
           snprintf (buffer, message_size + 1, "%s", json);
 
-          amqp_publish(key, buffer);
+          if (c_size == -10000 || c_size / 2 == 0) 
+              amqp_publish(key, buffer);
+          else
+              n2a_record_cache (key, buffer);
 
           xfree(buffer);
           xfree (json);
@@ -132,7 +139,10 @@ n2a_event_host_check (int event_type __attribute__ ((__unused__)), void *data)
                  "%s.%s.check.component.%s", g_options.connector,
                  g_options.eventsource_name, c->host_name);
 
-//      amqp_publish(key, buffer);
+      if (c_size == -10000 || c_size / 2 == 0)
+          amqp_publish(key, buffer);
+      else
+          n2a_record_cache (key, buffer);
 
       xfree(buffer);
     }
