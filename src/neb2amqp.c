@@ -173,7 +173,7 @@ amqp_connect (void)
 	  n2a_logger (LG_INFO, "AMQP: Successfully connected");
 	  amqp_connected = true;
       amqp_lastconnect = now;
-      if (!first) {
+      if (!first || g_options.purge) {
           unsigned int force = TRUE;
           n2a_pop_all_cache ((void *)&force);
       }

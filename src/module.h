@@ -37,6 +37,7 @@ struct options {
     int autopop;
     int rate;
     int flush;
+    int purge;
     char *cache_file;
 	char *userid;
 	char *password;

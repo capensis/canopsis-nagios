@@ -60,6 +60,7 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
   g_options.autopop = 60;
   g_options.rate = 5000;
   g_options.flush = -1;
+  g_options.purge = FALSE;
   g_options.cache_file = "/usr/local/nagios/var/canopsis.cache";
 
   // Parse module options
@@ -76,11 +77,11 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
       return 1;
    }
  
+  n2a_init_cache ();
+
   amqp_connect ();
 
   register_callbacks ();
-
-  n2a_init_cache ();
 
   n2a_logger (LG_INFO, "successfully finished initialization");
 
@@ -144,6 +145,32 @@ n2a_parse_arguments (const char *args_orig)
 	      g_options.log_level = strtol (right, NULL, 10);
 	      n2a_logger (LG_DEBUG, "Setting debug level to %d", g_options.log_level);
 	    }
+      else if (strcmp(left, "purge") == 0)
+        {
+          if (strncasecmp(right,"y", 1) == 0 || strncasecmp(right,"t", 1) == 0)
+              g_options.purge = TRUE;
+          else if (strncasecmp(right,"f", 1) == 0 || strncasecmp(right,"n", 1) == 0)
+              g_options.purge = FALSE;
+          else {
+              char *sav;
+              int r = strtol (right, &sav, 10);
+              if (right == sav)
+                  g_options.purge = FALSE;
+              else {
+                  switch (r) {
+                      case 1:
+                        g_options.purge = TRUE;
+                        break;
+                      case 0:
+                      default:
+                        g_options.purge = FALSE;
+                        break;
+                  }
+              }
+          }
+          n2a_logger (LG_DEBUG, "Setting purge to '%s'",
+              g_options.purge ? "true": "false");
+        }
       else if (strcmp (left, "rate") == 0)
         {
           int r = strtol (right, NULL, 10);

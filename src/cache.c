@@ -42,6 +42,7 @@ static unsigned int ini_lock = FALSE;
 static int lastid = 0;
 static unsigned int pop_lock = FALSE;
 static const char *tkey = NULL, *tmsg = NULL;
+static unsigned int purge_cache = FALSE;
 int c_size = -10000;
 
 static int compare (const void * a, const void * b)
@@ -113,6 +114,7 @@ alarm_handler (int sig)
 void
 n2a_init_cache (void)
 {
+    purge_cache = g_options.purge;
     /* test if the db file already exists */
     if (!file_exists (g_options.cache_file)) {
         /* if it does not, create an empty one */
@@ -308,6 +310,11 @@ do_it:
     char convert[128];
     if ((c_size / 2) <= 0)
         return;
+    if (purge_cache) {
+        purge_cache = FALSE;
+        storm = c_size / 2;
+        goto proceed;
+    }
     if (g_options.flush > 0) {
         storm = xmin (c_size/2, g_options.flush);
         goto proceed;
@@ -373,7 +380,10 @@ proceed:
     if (cpt >= storm)
         c_size = iniparser_getsecnkeys (ini, "cache");
     last_pop = time (NULL);
-    n2a_logger (LG_INFO, "There is still %d messages in cache", c_size / 2);
+    if (c_size / 2 != 0)
+        n2a_logger (LG_INFO, "There is still %d messages in cache", c_size / 2);
+    else
+        n2a_logger (LG_INFO, "No more messages in cache");
 #ifdef DEBUG
     alarm (g_options.autopop);
 #else
