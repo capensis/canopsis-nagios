@@ -65,7 +65,11 @@ libiniparser.a: $(OBJS_INI)
 neb2amqp.o: $(SRC_N2A) libjansson.a librabbitmq.a libiniparser.a
 	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $^
 	@($(ECHO) "\n$@ compiled successfuly!")
-	
+
+debug: $(SRC_N2A) libjansson.a librabbitmq.a libiniparser.a
+	$(CC) $(INCLUDES) $(CFLAGS) -o neb2amqp.o $^ -DDEBUG
+	@($(ECHO) "\n$@ compiled successfuly!")
+
 
 clean:
 	$(RM) $(OBJS_JSON) $(OBJS_RMQ) $(OBJS_INI)

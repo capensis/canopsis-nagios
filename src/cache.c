@@ -39,7 +39,7 @@ static unsigned int dbsetup = FALSE;
 static time_t last_flush = 0;
 static time_t last_pop = 0;
 static unsigned int ini_lock = FALSE;
-static int lastid = 1;
+static int lastid = 0;
 static unsigned int pop_lock = FALSE;
 static const char *tkey = NULL, *tmsg = NULL;
 int c_size = -10000;
@@ -97,6 +97,17 @@ n2a_clear_cache (void)
     n2a_flush_cache (TRUE);
     iniparser_freedict (ini);
 }
+
+#ifdef DEBUG
+static void
+alarm_handler (int sig)
+{
+    n2a_logger (LG_DEBUG, "Got SIGALRM");
+    unsigned int force = TRUE;
+    n2a_pop_all_cache ((void *)&force);
+    signal (SIGALRM, alarm_handler);
+}
+#endif
 
 void
 n2a_init_cache (void)
@@ -159,6 +170,23 @@ n2a_init_cache (void)
     }
 
     dbsetup = TRUE;
+    unsigned int force = FALSE;
+#ifdef DEBUG
+    signal (SIGALRM, alarm_handler);
+    alarm (g_options.autopop);
+#else
+    time_t now = time (NULL);
+    schedule_new_event(EVENT_USER_FUNCTION,
+                       TRUE,
+                       now+g_options.autopop,
+                       FALSE,
+                       g_options.autopop,
+                       NULL,
+                       TRUE,
+                       (void *)n2a_pop_all_cache,
+                       (void *)&force,
+                       0);
+#endif
 }
 
 void
@@ -172,13 +200,15 @@ n2a_flush_cache (unsigned int force)
     if (g_options.autoflush == 0)
         goto do_it;
     now = time (NULL);
-    if ((int) difftime (now, last_flush) < g_options.autoflush)
+    if ((int) difftime (now, last_flush) < g_options.autoflush && !force)
         return;
 
 do_it:
     last_flush = now;
     FILE *db = fopen (g_options.cache_file, "w");
     if (db != NULL) {
+        n2a_logger (LG_INFO, "syncing cache to disk (into: '%s')",
+                    g_options.cache_file);
         iniparser_dump_ini (ini, db);
 
         fclose (db);
@@ -219,9 +249,12 @@ n2a_record_cache (const char *key, const char *message)
 }
 
 void
-n2a_pop_all_cache (unsigned int force)
+n2a_pop_all_cache (void *pf)
 {
     time_t now = 0;
+    unsigned int force = *(int *)pf;
+    unsigned int f = FALSE;
+
     if (pop_lock)
         return;
 
@@ -232,7 +265,7 @@ n2a_pop_all_cache (unsigned int force)
         goto do_it;
 
     now = time (NULL);
-    if ((int) difftime (now, last_pop) < g_options.autopop)
+    if ((int) difftime (now, last_pop) < g_options.autopop && !force)
         return;
 
 do_it:
@@ -291,15 +324,14 @@ proceed:
         int r = amqp_publish (key, message);
         ini_lock = FALSE;
         if (r < 0) {
-            n2a_logger (LG_CRIT, "error while purging cache from message '%s'",
-            key);
+            n2a_logger (LG_CRIT, "error while purging cache from message '%s'", key);
             break;
         }
         iniparser_unset (ini, index_key);
         iniparser_unset (ini, index_message);
         cpt++;
         n2a_logger (LG_INFO, "cache successfuly purged from message '%s' (%d/%d)",
-        index_message, cpt, storm);
+                    index_message, cpt, storm);
         if (cpt >= storm)
             break;
         usleep (g_options.rate);
@@ -307,5 +339,22 @@ proceed:
     pop_lock = FALSE;
     if (r == 0 && (c_size / 2) == 0)
         lastid = 0;
+    if (cpt >= storm)
+        c_size = iniparser_getsecnkeys (ini, "cache");
     last_pop = time (NULL);
+    n2a_logger (LG_INFO, "There is still %d messages in cache", c_size / 2);
+#ifdef DEBUG
+    alarm (g_options.autopop);
+#else
+    schedule_new_event(EVENT_USER_FUNCTION,
+                       TRUE,
+                       last_pop+g_options.autopop,
+                       FALSE,
+                       g_options.autopop,
+                       NULL,
+                       TRUE,
+                       (void *)n2a_pop_all_cache,
+                       (void *)&f,
+                       0);
+#endif
 }

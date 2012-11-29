@@ -37,13 +37,14 @@
 
 extern struct options g_options;
 
-int sockfd;
-bool amqp_connected = false;
-bool amqp_errors = false;
-int amqp_lastconnect = 0;
-int amqp_wait_time = 10;
+static int sockfd;
+static bool amqp_connected = false;
+static bool amqp_errors = false;
+static bool first = true;
+static int amqp_lastconnect = 0;
+static int amqp_wait_time = 10;
 
-amqp_connection_state_t conn = NULL;
+static amqp_connection_state_t conn = NULL;
 
 void
 on_error (int x, char const *context)
@@ -172,7 +173,11 @@ amqp_connect (void)
 	  n2a_logger (LG_INFO, "AMQP: Successfully connected");
 	  amqp_connected = true;
       amqp_lastconnect = now;
-      n2a_pop_all_cache (TRUE);
+      if (!first) {
+          unsigned int force = TRUE;
+          n2a_pop_all_cache ((void *)&force);
+      }
+      first = false;
 	}
 
     }
@@ -245,8 +250,6 @@ amqp_publish (const char *routingkey, const char *message)
      amqp_disconnect ();
      return -1;
 		}
-      
-      n2a_pop_all_cache (FALSE);
       
       return 0;
     }

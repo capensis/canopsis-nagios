@@ -46,10 +46,8 @@ do {                                                                            
         snprintf (buffer, len + 1, "%s", json);                                    \
         if (c_size == -10000 || c_size / 2 == 0)                                   \
             amqp_publish(key, buffer);                                             \
-        else {                                                                     \
+        else                                                                       \
             n2a_record_cache (key, buffer);                                        \
-            n2a_pop_all_cache (FALSE);                                             \
-        }                                                                          \
         xfree(buffer);                                                             \
         xfree (json);                                                              \
         i++;                                                                       \
@@ -93,10 +91,8 @@ n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *data
 
           if (c_size == -10000 || c_size / 2 == 0) 
               amqp_publish(key, buffer);
-          else {
+          else
               n2a_record_cache (key, buffer);
-              n2a_pop_all_cache (FALSE);
-          }
 
           xfree(buffer);
           xfree (json);
@@ -145,10 +141,8 @@ n2a_event_host_check (int event_type __attribute__ ((__unused__)), void *data)
 
       if (c_size == -10000 || c_size / 2 == 0)
           amqp_publish(key, buffer);
-      else {
+      else
           n2a_record_cache (key, buffer);
-          n2a_pop_all_cache (FALSE);
-      }
 
       xfree(buffer);
     }
