@@ -121,13 +121,6 @@ n2a_init_cache (void)
             tmp = fdopen (fd[1], "w");
             /* we only create an empty section */
             fprintf (tmp, "[cache]\n");
-/*
-            fprintf (tmp, "size=0\n");
-            for (; i <= g_options.cache_size; i++) {
-                fprintf (tmp, "message_%d=\"\"\n", i);
-                fprintf (tmp, "key_%d=\"\"\n", i);
-            }
-*/
             fclose (tmp);
             close (fd[1]);
             close (fd[0]);
@@ -147,7 +140,11 @@ n2a_init_cache (void)
         n2a_logger (LG_CRIT, "cannot parse file: %s", g_options.cache_file);
         return;
     }
-
+ 
+    if (!iniparser_find_entry (ini, "cache")) {
+        n2a_logger (LG_CRIT, "invalid cache file! No 'cache' entry found");
+        iniparser_set (ini, "cache", NULL);
+    }
     int n = iniparser_getsecnkeys (ini, "cache");
     if (n > 0) {
         char **keys = iniparser_getseckeys (ini, "cache");
