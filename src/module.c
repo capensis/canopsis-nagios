@@ -55,10 +55,10 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
   g_options.log_level = 0;
   g_options.connector = "nagios";
   g_options.max_size = 8192;
-  g_options.cache_size = 500;
+  g_options.cache_size = 10000;
   g_options.autoflush = 60;
   g_options.autopop = 60;
-  g_options.rate = 250000;
+  g_options.rate = 5000;
   g_options.flush = -1;
   g_options.cache_file = "/usr/local/nagios/var/canopsis.cache";
 
