@@ -31,7 +31,7 @@ void n2a_init_cache (void);
  * set to TRUE. if 'autoflush' == 0 the automatic flush is done at every call.
  * @param force: set to TRUE if you want to override the autoflush timeout
  */
-void n2a_flush_cache (unsigned int force);
+void n2a_flush_cache (void *pf);
 
 /**
  * this function stores the key and the message into the dictionary.

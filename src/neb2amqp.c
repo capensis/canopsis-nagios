@@ -219,8 +219,6 @@ amqp_disconnect (void)
 int
 amqp_publish (const char *routingkey, const char *message)
 {
-  n2a_flush_cache (FALSE);
-
   if (! amqp_connected)
 	amqp_connect ();
 

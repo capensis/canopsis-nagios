@@ -94,7 +94,8 @@ create_empty_file (const char *file)
 void
 n2a_clear_cache (void)
 {
-    n2a_flush_cache (TRUE);
+    unsigned int force = TRUE;
+    n2a_flush_cache (&force);
     iniparser_freedict (ini);
 }
 
@@ -186,12 +187,24 @@ n2a_init_cache (void)
                        (void *)n2a_pop_all_cache,
                        (void *)&force,
                        0);
+    schedule_new_event(EVENT_USER_FUNCTION,
+                       TRUE,
+                       now+g_options.autoflush,
+                       FALSE,
+                       g_options.autoflush,
+                       NULL,
+                       TRUE,
+                       (void *)n2a_flush_cache,
+                       (void *)&force,
+                       0);
 #endif
 }
 
 void
-n2a_flush_cache (unsigned int force)
+n2a_flush_cache (void *pf)
 {
+    unsigned int force = *(int *)pf;
+    unsigned int f = FALSE;
     time_t now = 0;
     if ((!dbsetup || g_options.autoflush < 0) && !force)
         return;
@@ -207,14 +220,29 @@ do_it:
     last_flush = now;
     FILE *db = fopen (g_options.cache_file, "w");
     if (db != NULL) {
-        n2a_logger (LG_INFO, "syncing cache to disk (into: '%s')",
-                    g_options.cache_file);
+        if (c_size == -10000)
+            c_size = iniparser_getsecnkeys (ini, "cache");
         iniparser_dump_ini (ini, db);
+        n2a_logger (LG_INFO, "syncing %d messages from cache to disk (into: '%s')",
+                    c_size / 2, g_options.cache_file);
 
         fclose (db);
     } else {
         n2a_logger (LG_CRIT, "CACHE: flush error: %s", strerror (errno));
     }
+#ifndef DEBUG
+    now = time (NULL);
+    schedule_new_event(EVENT_USER_FUNCTION,
+                       TRUE,
+                       now+g_options.autoflush,
+                       FALSE,
+                       g_options.autoflush,
+                       NULL,
+                       TRUE,
+                       (void *)n2a_flush_cache,
+                       (void *)&f,
+                       0);
+#endif
 }
 
 void
@@ -254,6 +282,9 @@ n2a_pop_all_cache (void *pf)
     time_t now = 0;
     unsigned int force = *(int *)pf;
     unsigned int f = FALSE;
+
+    n2a_logger (LG_INFO, "pop lock: %s, %d", pop_lock ? "TRUE" : "FALSE",
+    last_pop);
 
     if (pop_lock)
         return;
