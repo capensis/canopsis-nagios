@@ -22,15 +22,23 @@
 // to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
+#include "module.h"
 #include "logger.h"
 #include "nagios.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
+extern struct options g_options;
+
 void
 n2a_logger (int priority, const char *loginfo, ...)
 {
+  if (priority == 1 && g_options.log_level <= 0)
+  	return;
+  else
+  	priority = LG_INFO;
+
   char buffer[8192];
   snprintf (buffer, 20, "neb2amqp: ");
 

@@ -275,7 +275,7 @@ n2a_record_cache (const char *key, const char *message)
     iniparser_set (ini, index, key);
     snprintf (index, 256, "cache:message_%d", lastid);
     iniparser_set (ini, index, message);
-    n2a_logger (LG_INFO, "add message in cache: '%s' (%d)", key, lastid);
+    n2a_logger (LG_DEBUG, "add message in cache: '%s' (%d)", key, lastid);
 }
 
 void
@@ -285,7 +285,7 @@ n2a_pop_all_cache (void *pf)
     unsigned int force = *(int *)pf;
     unsigned int f = FALSE;
 
-    n2a_logger (LG_INFO, "pop lock: %s, %d", pop_lock ? "TRUE" : "FALSE",
+    n2a_logger (LG_DEBUG, "pop lock: %s, %d", pop_lock ? "TRUE" : "FALSE",
     last_pop);
 
     if (pop_lock)
@@ -341,7 +341,7 @@ do_it:
             break;
     }
 proceed:
-    n2a_logger (LG_INFO, "depiling %d/%d messages from cache", storm, c_size/2);
+    n2a_logger (LG_INFO, "Start to unstack %d/%d messages from cache", storm, c_size/2);
 
     pop_lock = TRUE;
     do {
@@ -362,14 +362,14 @@ proceed:
         int r = amqp_publish (key, message);
         ini_lock = FALSE;
         if (r < 0) {
-            n2a_logger (LG_CRIT, "error while purging cache from message '%s'", key);
+            n2a_logger (LG_CRIT, "error while stacking message from cache '%s'", key);
             break;
         }
         iniparser_unset (ini, index_key);
         iniparser_unset (ini, index_message);
         cpt++;
-        n2a_logger (LG_INFO, "cache successfuly purged from message '%s' (%d/%d)",
-                    index_message, cpt, storm);
+        n2a_logger (LG_DEBUG, "cache successfuly purged from message '%s' (%d/%d)",
+                   index_message, cpt, storm);
         if (cpt >= storm)
             break;
         usleep (g_options.rate);
@@ -381,9 +381,9 @@ proceed:
         c_size = iniparser_getsecnkeys (ini, "cache");
     last_pop = time (NULL);
     if (c_size / 2 != 0)
-        n2a_logger (LG_INFO, "There is still %d messages in cache", c_size / 2);
+        n2a_logger (LG_INFO, "Done, %d messages sent, there is still %d messages in cache", cpt, c_size / 2);
     else
-        n2a_logger (LG_INFO, "No more messages in cache");
+        n2a_logger (LG_INFO, "Done, %d messages sent, no more messages in cache", cpt);
 #ifdef DEBUG
     alarm (g_options.autopop);
 #else

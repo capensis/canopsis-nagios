@@ -32,7 +32,7 @@
 #define LG_WARN  LOG_INFO
 #define LG_ERR   LOG_INFO
 #define LG_CRIT  LOG_INFO
-#define LG_DEBUG LOG_INFO
+#define LG_DEBUG 1
 #define LG_ALERT LOG_INFO
 
 #ifdef __cplusplus
