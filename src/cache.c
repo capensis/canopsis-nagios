@@ -285,9 +285,6 @@ n2a_pop_all_cache (void *pf)
     unsigned int force = *(int *)pf;
     unsigned int f = FALSE;
 
-    n2a_logger (LG_DEBUG, "pop lock: %s, %d", pop_lock ? "TRUE" : "FALSE",
-    last_pop);
-
     if (pop_lock)
         return;
 
