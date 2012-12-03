@@ -580,7 +580,8 @@ static line_status iniparser_line(
         sta = LINE_SECTION ;
     } else if (sscanf (line, "%[^=] = \"%[^\"]\"", key, value) == 2
            ||  sscanf (line, "%[^=] = '%[^\']'",   key, value) == 2
-           ||  sscanf (line, "%[^=] = %[^;#]",     key, value) == 2) {
+//           ||  sscanf (line, "%[^=] = %[^;#]",     key, value) == 2) {
+           ||  sscanf (line, "%[^=] = %[^#]",     key, value) == 2) {
         /* Usual key=value, with or without comments */
         strcpy(key, strstrip(key));
         strcpy(key, strlwc(key));
