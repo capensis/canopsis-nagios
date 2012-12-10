@@ -67,7 +67,7 @@ neb2amqp.o: $(SRC_N2A) libjansson.a librabbitmq.a libiniparser.a
 	@($(ECHO) "\n$@ compiled successfuly!")
 
 debug: $(SRC_N2A) libjansson.a librabbitmq.a libiniparser.a
-	$(CC) $(INCLUDES) $(CFLAGS) -o neb2amqp.o $^ -DDEBUG
+	$(CC) $(INCLUDES) $(CFLAGS) -g -o neb2amqp.o $^ -DDEBUG
 	@($(ECHO) "\n$@ compiled successfuly!")
 
 

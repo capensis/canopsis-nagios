@@ -53,6 +53,12 @@ static int compare (const void * a, const void * b)
     aa = *(const char **) a;
     bb = *(const char **) b;
     int ret = 0;
+    if (aa == NULL && bb == NULL)
+        return 0;
+    if (aa == NULL)
+        return -1;
+    if (bb == NULL)
+        return 1;
     if (strncmp (aa, bb, 8) != 0) {
         ret = strcmp (aa, bb);
     } else {
@@ -223,7 +229,7 @@ do_it:
     last_flush = now;
     FILE *db = fopen (g_options.cache_file, "w");
     if (db != NULL) {
-        //if (c_size == -10000)
+        if (c_size == -10000)
             c_size = iniparser_getsecnkeys (ini, "cache");
         iniparser_dump_ini (ini, db);
         fclose (db);
@@ -257,8 +263,8 @@ n2a_record_cache (const char *key, const char *message)
     /* avoid caching the message twice */
     if (key == tkey && message == tmsg)
         return;
-    int n = iniparser_getsecnkeys (ini, "cache") / 2;
-    if (n > g_options.cache_size) {
+    int n = iniparser_getsecnkeys (ini, "cache");
+    if ((n / 2) >= g_options.cache_size && n > 0) {
         n2a_logger (LG_CRIT, "cache size exceded! Replacing oldest messages");
         char **keys = iniparser_getseckeys (ini, "cache");
         /* sort the returned keys */
@@ -272,7 +278,9 @@ n2a_record_cache (const char *key, const char *message)
         iniparser_unset (ini, index);
         snprintf (index, 256, "cache:message_%d", first);
         iniparser_unset (ini, index);
-    }
+        c_size = n;
+    } else
+        c_size = n + 2;
     lastid++;
     snprintf (index, 256, "cache:key_%d", lastid);
     iniparser_set (ini, index, key);
@@ -289,17 +297,17 @@ n2a_pop_all_cache (void *pf)
     unsigned int f = FALSE;
 
     if (pop_lock)
-        return;
+        goto reschedule;
 
     if (g_options.autoflush < 0 && !force)
-        return;
+        goto reschedule;
 
     if (g_options.autoflush == 0)
         goto do_it;
 
     now = time (NULL);
     if ((int) difftime (now, last_pop) < g_options.autoflush && !force)
-        return;
+        goto reschedule;
 
 do_it:
     last_pop = now;
@@ -309,7 +317,7 @@ do_it:
     size_t l;
     char convert[128];
     if ((c_size / 2) <= 0)
-        return;
+        goto reschedule;
     if (purge_cache) {
         purge_cache = FALSE;
         storm = c_size / 2;
@@ -384,6 +392,7 @@ proceed:
         n2a_logger (LG_INFO, "Done, %d messages sent, there is still %d messages in cache", cpt, c_size / 2);
     else
         n2a_logger (LG_INFO, "Done, %d messages sent, no more messages in cache", cpt);
+reschedule:
 #ifdef DEBUG
     alarm (g_options.autoflush);
 #else

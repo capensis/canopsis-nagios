@@ -57,11 +57,11 @@ Options:
                     (note: if we cannot read/create the file, the cache will
                     only run in memory)
     cache_size =    Number of messages to store in cache (1000)
-    autosync =     Delay in seconds between two automatic flush of the cache into 'cache_file'.
+    autosync =      Delay in seconds between two automatic sync of the cache into 'cache_file'.
                     If < 0 disable autosync (note: the cache will always be stored when the module
                     is unloaded). If = 0 cache every time (this is not recommended as it may consumes
                     lot of I/O) (default: 60)
-    autoflush =       Delay in seconds between two automatic flush of the cache into the AMQP bus
+    autoflush =     Delay in seconds between two automatic flush of the cache into the AMQP bus
                     if it is available (60)
     rate =          Delay in ms between two messages when depiling (5)
     flush =         Number of messages to send when depiling (-1: means it is calculated at runtime)
