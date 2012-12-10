@@ -170,6 +170,7 @@ n2a_init_cache (void)
         char *m = strchr (index_key, '_');
         lastid = strtol (m+1, NULL, 10);
         n2a_logger (LG_INFO, "retrieved %d messages from cache", n/2);
+        c_size = n;
     }
 
     dbsetup = TRUE;
@@ -222,13 +223,15 @@ do_it:
     last_flush = now;
     FILE *db = fopen (g_options.cache_file, "w");
     if (db != NULL) {
-        if (c_size == -10000)
+        //if (c_size == -10000)
             c_size = iniparser_getsecnkeys (ini, "cache");
         iniparser_dump_ini (ini, db);
-        n2a_logger (LG_INFO, "syncing %d messages from cache to disk (into: '%s')",
-                    c_size / 2, g_options.cache_file);
-
         fclose (db);
+
+        if (c_size != 0)
+            n2a_logger (LG_INFO, "syncing %d messages from cache to disk (into: '%s')",
+                        c_size / 2, g_options.cache_file);
+        
     } else {
         n2a_logger (LG_CRIT, "CACHE: flush error: %s", strerror (errno));
     }
