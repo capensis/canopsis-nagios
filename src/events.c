@@ -17,6 +17,8 @@
 # along with Canopsis.  If not, see <http://www.gnu.org/licenses/>.
 # ---------------------------------*/
 
+#include <stdbool.h>
+
 #include "nagios.h"
 #include "module.h"
 #include "logger.h"
@@ -30,6 +32,8 @@
 
 extern struct options g_options;
 extern int c_size;
+
+extern bool amqp_connected;
 
 int g_last_event_program_status = 0;
 
@@ -89,6 +93,9 @@ n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *data
 
           snprintf (buffer, message_size + 1, "%s", json);
 
+          if (! amqp_connected)
+            amqp_connect ();
+
           if (c_size == -10000 || c_size / 2 == 0) 
               amqp_publish(key, buffer);
           else
@@ -138,6 +145,9 @@ n2a_event_host_check (int event_type __attribute__ ((__unused__)), void *data)
       snprintf(key, xmin(g_options.max_size, (int)l),
                  "%s.%s.check.component.%s", g_options.connector,
                  g_options.eventsource_name, c->host_name);
+
+     if (! amqp_connected)
+        amqp_connect ();
 
       if (c_size == -10000 || c_size / 2 == 0)
           amqp_publish(key, buffer);

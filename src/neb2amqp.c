@@ -38,11 +38,13 @@
 extern struct options g_options;
 
 static int sockfd;
-static bool amqp_connected = false;
+
 static bool amqp_errors = false;
 static bool first = true;
 static int amqp_lastconnect = 0;
 static int amqp_wait_time = 10;
+
+bool amqp_connected = false;
 
 static amqp_connection_state_t conn = NULL;
 
@@ -128,61 +130,55 @@ amqp_connect (void)
   gettimeofday (&tv, NULL);
   int now = tv.tv_sec;
 
-  //init amqp_lastconnect
-  if (amqp_lastconnect == 0)
-    amqp_lastconnect = now - amqp_wait_time - 5;
+  if ((amqp_lastconnect == 0) || (!amqp_connected && (now - amqp_lastconnect) >= amqp_wait_time) )
+  {
+    amqp_lastconnect = now;
+    amqp_connected = false;
 
-  if (!amqp_connected && (now - amqp_lastconnect) >= amqp_wait_time)
-    {
+    if (conn)
+  	{
+        amqp_destroy_connection(conn);
+        amqp_socket_close(sockfd);
+  	}
+  	  
+    n2a_logger (LG_DEBUG, "AMQP: Opening socket");
+    on_error (sockfd = amqp_open_socket (g_options.hostname, g_options.port), "Opening socket");
 
+    if (!amqp_errors)
+  	{
+        n2a_logger (LG_DEBUG, "AMQP: Init connection");
+        conn = amqp_new_connection ();
+  	}
+  	
+    if (!amqp_errors)
+  	{
+  	  amqp_set_sockfd (conn, sockfd);
 
-      if (conn)
-	{
-      amqp_destroy_connection(conn);
-      amqp_socket_close(sockfd);
-	}
-	  
-      n2a_logger (LG_DEBUG, "AMQP: Opening socket");
-      on_error (sockfd = amqp_open_socket (g_options.hostname, g_options.port), "Opening socket");
+  	  n2a_logger (LG_DEBUG, "AMQP: Logging");
+  	  on_amqp_error (amqp_login(conn, g_options.virtual_host, 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, g_options.userid, g_options.password), "Logging in");
+  	}
 
-      if (!amqp_errors)
-	{
-      n2a_logger (LG_DEBUG, "AMQP: Init connection");
-      conn = amqp_new_connection ();
-	}
-	
-      if (!amqp_errors)
-	{
-	  amqp_set_sockfd (conn, sockfd);
+    if (!amqp_errors)
+  	{
+  	  n2a_logger (LG_DEBUG, "AMQP: Open channel");
+  	  amqp_channel_open (conn, 1);
+  	  on_amqp_error (amqp_get_rpc_reply (conn), "Opening channel");
+  	}
 
-	  n2a_logger (LG_DEBUG, "AMQP: Logging");
-	  on_amqp_error (amqp_login(conn, g_options.virtual_host, 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, g_options.userid, g_options.password), "Logging in");
-	}
-
-      if (!amqp_errors)
-	{
-	  n2a_logger (LG_DEBUG, "AMQP: Open channel");
-	  amqp_channel_open (conn, 1);
-	  on_amqp_error (amqp_get_rpc_reply (conn), "Opening channel");
-	}
-
-      amqp_connected = false;
-      
-      if (!amqp_errors)
-	{
-	  n2a_logger (LG_INFO, "AMQP: Successfully connected");
-	  amqp_connected = true;
-      amqp_lastconnect = now;
+    if (!amqp_errors){
+      n2a_logger (LG_INFO, "AMQP: Successfully connected");
+      amqp_connected = true;
+    }
+        
+    if (amqp_connected)
+  	{
       if (!first || g_options.purge) {
-          unsigned int force = TRUE;
-          n2a_pop_all_cache ((void *)&force);
+        unsigned int force = TRUE;
+        n2a_pop_all_cache ((void *)&force);
       }
       first = false;
-	}
-
-    }
-    amqp_lastconnect = now;
-
+  	}
+  }
 }
 
 void
@@ -220,40 +216,38 @@ int
 amqp_publish (const char *routingkey, const char *message)
 {
   if (! amqp_connected)
-	amqp_connect ();
+    amqp_connect ();
 
   if (amqp_connected)
-    {
-      amqp_basic_properties_t props;
-      props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG | AMQP_BASIC_CONTENT_ENCODING_FLAG;
-      props.content_type = amqp_cstring_bytes ("application/json");
-      props.content_encoding = amqp_cstring_bytes ("UTF-8");
-      props.delivery_mode = 2;	/* persistent delivery mode */
-      
-     int result = amqp_basic_publish (conn,
-				    1,
-				    amqp_cstring_bytes (g_options.exchange_name),
-				    amqp_cstring_bytes (routingkey),
-				    0,
-				    0,
-				    &props,
-				    amqp_cstring_bytes (message));
+  {
+    amqp_basic_properties_t props;
+    props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG | AMQP_BASIC_CONTENT_ENCODING_FLAG;
+    props.content_type = amqp_cstring_bytes ("application/json");
+    props.content_encoding = amqp_cstring_bytes ("UTF-8");
+    props.delivery_mode = 2;	/* persistent delivery mode */
+    
+   int result = amqp_basic_publish (conn,
+			    1,
+			    amqp_cstring_bytes (g_options.exchange_name),
+			    amqp_cstring_bytes (routingkey),
+			    0,
+			    0,
+			    &props,
+			    amqp_cstring_bytes (message));
 
-      on_error (result, "Publishing");
+    on_error (result, "Publishing");
 
-      if (amqp_errors)
-		{
-     n2a_record_cache (routingkey, message);
-	 n2a_logger (LG_INFO, "AMQP: Error on publish");
-     amqp_disconnect ();
-     return -1;
-		}
-      
-      return 0;
-    }
-  else
+    if (amqp_errors)
     {
       n2a_record_cache (routingkey, message);
+      n2a_logger (LG_INFO, "AMQP: Error on publish");
+      amqp_disconnect ();
       return -1;
     }
+    return 0;
+
+  }else{
+    n2a_record_cache (routingkey, message);
+    return -1;
+  }
 }
