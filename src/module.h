@@ -33,8 +33,8 @@ struct options {
 	int port;
     int max_size;
     int cache_size;
+    int autosync;
     int autoflush;
-    int autopop;
     int rate;
     int flush;
     int purge;

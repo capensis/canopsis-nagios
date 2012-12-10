@@ -56,8 +56,8 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
   g_options.connector = "nagios";
   g_options.max_size = 8192;
   g_options.cache_size = 10000;
+  g_options.autosync = 60;
   g_options.autoflush = 60;
-  g_options.autopop = 60;
   g_options.rate = 5000;
   g_options.flush = -1;
   g_options.purge = FALSE;
@@ -199,10 +199,10 @@ n2a_parse_arguments (const char *args_orig)
           n2a_logger (LG_DEBUG, "Setting max_size buffer to %d bits",
               g_options.max_size);
         }
-      else if (strcmp (left, "autopop") == 0)
+      else if (strcmp (left, "autoflush") == 0)
         {
-          g_options.autopop = strtol (right, NULL, 10);
-          n2a_logger (LG_DEBUG, "Setting autopop to %ds", g_options.autopop);
+          g_options.autoflush = strtol (right, NULL, 10);
+          n2a_logger (LG_DEBUG, "Setting autoflush to %ds", g_options.autoflush);
         }
       else if (strcmp(left, "cache_size") == 0)
         {
@@ -216,11 +216,11 @@ n2a_parse_arguments (const char *args_orig)
           n2a_logger (LG_DEBUG, "Setting cache_file to '%s'",
               g_options.cache_file);
         }
-      else if (strcmp(left, "autoflush") == 0)
+      else if (strcmp(left, "autosync") == 0)
         {
-          g_options.autoflush = strtol(right, NULL, 10);
-          n2a_logger (LG_DEBUG, "Setting autoflush to %ds",
-              g_options.autoflush);
+          g_options.autosync = strtol(right, NULL, 10);
+          n2a_logger (LG_DEBUG, "Setting autosync to %ds",
+              g_options.autosync);
         }
 	  else if (strcmp (left, "name") == 0)
 	    {

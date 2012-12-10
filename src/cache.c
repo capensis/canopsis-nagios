@@ -176,14 +176,14 @@ n2a_init_cache (void)
     unsigned int force = FALSE;
 #ifdef DEBUG
     signal (SIGALRM, alarm_handler);
-    alarm (g_options.autopop);
+    alarm (g_options.autoflush);
 #else
     time_t now = time (NULL);
     schedule_new_event(EVENT_USER_FUNCTION,
                        TRUE,
-                       now+g_options.autopop,
+                       now+g_options.autoflush,
                        FALSE,
-                       g_options.autopop,
+                       g_options.autoflush,
                        NULL,
                        TRUE,
                        (void *)n2a_pop_all_cache,
@@ -191,9 +191,9 @@ n2a_init_cache (void)
                        0);
     schedule_new_event(EVENT_USER_FUNCTION,
                        TRUE,
-                       now+g_options.autoflush,
+                       now+g_options.autosync,
                        FALSE,
-                       g_options.autoflush,
+                       g_options.autosync,
                        NULL,
                        TRUE,
                        (void *)n2a_flush_cache,
@@ -208,14 +208,14 @@ n2a_flush_cache (void *pf)
     unsigned int force = *(int *)pf;
     unsigned int f = FALSE;
     time_t now = 0;
-    if ((!dbsetup || g_options.autoflush < 0) && !force)
+    if ((!dbsetup || g_options.autosync < 0) && !force)
         return;
     /* i know... gotos are a mess, but here i wanna avoid this comparison when
      * it's useless */
-    if (g_options.autoflush == 0)
+    if (g_options.autosync == 0)
         goto do_it;
     now = time (NULL);
-    if ((int) difftime (now, last_flush) < g_options.autoflush && !force)
+    if ((int) difftime (now, last_flush) < g_options.autosync && !force)
         return;
 
 do_it:
@@ -236,9 +236,9 @@ do_it:
     now = time (NULL);
     schedule_new_event(EVENT_USER_FUNCTION,
                        TRUE,
-                       now+g_options.autoflush,
+                       now+g_options.autosync,
                        FALSE,
-                       g_options.autoflush,
+                       g_options.autosync,
                        NULL,
                        TRUE,
                        (void *)n2a_flush_cache,
@@ -288,14 +288,14 @@ n2a_pop_all_cache (void *pf)
     if (pop_lock)
         return;
 
-    if (g_options.autopop < 0 && !force)
+    if (g_options.autoflush < 0 && !force)
         return;
 
-    if (g_options.autopop == 0)
+    if (g_options.autoflush == 0)
         goto do_it;
 
     now = time (NULL);
-    if ((int) difftime (now, last_pop) < g_options.autopop && !force)
+    if ((int) difftime (now, last_pop) < g_options.autoflush && !force)
         return;
 
 do_it:
@@ -382,13 +382,13 @@ proceed:
     else
         n2a_logger (LG_INFO, "Done, %d messages sent, no more messages in cache", cpt);
 #ifdef DEBUG
-    alarm (g_options.autopop);
+    alarm (g_options.autoflush);
 #else
     schedule_new_event(EVENT_USER_FUNCTION,
                        TRUE,
-                       last_pop+g_options.autopop,
+                       last_pop+g_options.autoflush,
                        FALSE,
-                       g_options.autopop,
+                       g_options.autoflush,
                        NULL,
                        TRUE,
                        (void *)n2a_pop_all_cache,

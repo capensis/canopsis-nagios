@@ -25,11 +25,11 @@ void n2a_init_cache (void);
 
 /**
  * this function flushes the cache into a file on the disk.
- * this flush happens when 'autoflush' delays since last flush is elapsed unless
+ * this flush happens when 'autosync' delays since last flush is elapsed unless
  * 'force' is set to TRUE while calling the function.
- * note: if 'autoflush' < 0 the automatic flush is disabled unless 'force' is
- * set to TRUE. if 'autoflush' == 0 the automatic flush is done at every call.
- * @param force: set to TRUE if you want to override the autoflush timeout
+ * note: if 'autosync' < 0 the automatic flush is disabled unless 'force' is
+ * set to TRUE. if 'autosync' == 0 the automatic flush is done at every call.
+ * @param force: set to TRUE if you want to override the autosync timeout
  */
 void n2a_flush_cache (void *pf);
 
@@ -46,6 +46,6 @@ void n2a_record_cache (const char *key, const char *message);
  * to the AMQP bus.
  * note: when one send fails, we stop the depiling process until next time...
  * @param pf: pointer to a boolean.
- * if TRUE force depiling, else wait for 'autopop' seconds
+ * if TRUE force depiling, else wait for 'autoflush' seconds
  */
 void n2a_pop_all_cache (void *pf); 
