@@ -217,14 +217,15 @@ n2a_flush_cache (void *pf)
     unsigned int f = FALSE;
     time_t now = 0;
     if ((!dbsetup || g_options.autosync < 0) && !force)
-        return;
+        goto reschedule;
     /* i know... gotos are a mess, but here i wanna avoid this comparison when
      * it's useless */
     if (g_options.autosync == 0)
         goto do_it;
+
     now = time (NULL);
     if ((int) difftime (now, last_flush) < g_options.autosync && !force)
-        return;
+        goto reschedule;
 
 do_it:
     last_flush = now;
@@ -242,8 +243,9 @@ do_it:
     } else {
         n2a_logger (LG_CRIT, "CACHE: flush error: %s", strerror (errno));
     }
-#ifndef DEBUG
+reschedule:
     now = time (NULL);
+#ifndef DEBUG
     schedule_new_event(EVENT_USER_FUNCTION,
                        TRUE,
                        now+g_options.autosync,
