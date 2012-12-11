@@ -33,6 +33,7 @@
 #include "iniparser.h"
 
 extern struct options g_options;
+extern unsigned int amqp_connected;
 
 static dictionary *ini = NULL;
 static unsigned int dbsetup = FALSE;
@@ -295,6 +296,12 @@ n2a_pop_all_cache (void *pf)
     time_t now = 0;
     unsigned int force = *(int *)pf;
     unsigned int f = FALSE;
+
+    if (!amqp_connected)
+        amqp_connect ();
+
+    if (!amqp_connected)
+        goto reschedule;
 
     if (pop_lock)
         goto reschedule;

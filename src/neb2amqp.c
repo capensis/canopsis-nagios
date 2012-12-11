@@ -44,7 +44,7 @@ static bool first = true;
 static int amqp_lastconnect = 0;
 static int amqp_wait_time = 10;
 
-static bool amqp_connected = false;
+unsigned int amqp_connected = FALSE;
 
 static amqp_connection_state_t conn = NULL;
 
@@ -133,7 +133,7 @@ amqp_connect (void)
   if ((amqp_lastconnect == 0) || (!amqp_connected && (now - amqp_lastconnect) >= amqp_wait_time) )
   {
     amqp_lastconnect = now;
-    amqp_connected = false;
+    amqp_connected = FALSE;
 
     if (conn)
   	{
@@ -167,7 +167,7 @@ amqp_connect (void)
 
     if (!amqp_errors){
       n2a_logger (LG_INFO, "AMQP: Successfully connected");
-      amqp_connected = true;
+      amqp_connected = TRUE;
     }
         
     if (amqp_connected)
@@ -200,7 +200,7 @@ amqp_disconnect (void)
       on_error (amqp_destroy_connection (conn), "Ending connection");
       
       conn = NULL;
-      amqp_connected = false;
+      amqp_connected = FALSE;
 
       amqp_socket_close(sockfd);
       
