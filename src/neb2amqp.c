@@ -44,7 +44,7 @@ static bool first = true;
 static int amqp_lastconnect = 0;
 static int amqp_wait_time = 10;
 
-bool amqp_connected = false;
+static bool amqp_connected = false;
 
 static amqp_connection_state_t conn = NULL;
 
