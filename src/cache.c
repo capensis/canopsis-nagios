@@ -396,12 +396,12 @@ proceed:
         lastid = 0;
     if (cpt >= storm)
         c_size = iniparser_getsecnkeys (ini, "cache");
-    last_pop = time (NULL);
     if (c_size / 2 != 0)
         n2a_logger (LG_INFO, "Done, %d messages sent, there is still %d messages in cache", cpt, c_size / 2);
     else
         n2a_logger (LG_INFO, "Done, %d messages sent, no more messages in cache", cpt);
 reschedule:
+    last_pop = time (NULL);
 #ifdef DEBUG
     alarm (g_options.autoflush);
 #else
