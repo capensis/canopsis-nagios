@@ -70,6 +70,8 @@ debug: $(SRC_N2A) libjansson.a librabbitmq.a libiniparser.a
 	$(CC) $(INCLUDES) $(CFLAGS) -g -o neb2amqp.o $^ -DDEBUG
 	@($(ECHO) "\n$@ compiled successfuly!")
 
+fifo-bench: src/fifo.o
+	$(CC) -Isrc/ -o $@ test/$@.c $^
 
 clean:
 	$(RM) $(OBJS_JSON) $(OBJS_RMQ) $(OBJS_INI)

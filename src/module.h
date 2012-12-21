@@ -22,6 +22,8 @@
 
 #include "nagios.h"
 
+#include "fifo.h"
+
 #define FALSE 0
 #define TRUE 1
 
@@ -45,6 +47,7 @@ struct options {
 	char *exchange_name;
 	char *connector;
 	char *eventsource_name;
+	fifo * pFifo;
 
 	int log_level;
 	

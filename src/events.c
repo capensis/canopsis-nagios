@@ -29,7 +29,6 @@
 #include "events.h"
 
 extern struct options g_options;
-extern int c_size;
 
 int g_last_event_program_status = 0;
 
@@ -44,10 +43,7 @@ do {                                                                            
         size_t len = xstrlen (json);                                               \
         buffer = xmalloc (len + 1);                                                \
         snprintf (buffer, len + 1, "%s", json);                                    \
-        if (c_size == -10000 || c_size / 2 == 0)                                   \
-            amqp_publish(key, buffer);                                             \
-        else                                                                       \
-            n2a_record_cache (key, buffer);                                        \
+        amqp_publish(key, buffer);                                                 \
         xfree(buffer);                                                             \
         xfree (json);                                                              \
         i++;                                                                       \
@@ -89,10 +85,7 @@ n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *data
 
           snprintf (buffer, message_size + 1, "%s", json);
 
-          if (c_size == -10000 || c_size / 2 == 0) 
-              amqp_publish(key, buffer);
-          else
-              n2a_record_cache (key, buffer);
+          amqp_publish(key, buffer);
 
           xfree(buffer);
           xfree (json);
@@ -124,28 +117,25 @@ n2a_event_host_check (int event_type __attribute__ ((__unused__)), void *data)
   nebstruct_host_check_data *c = (nebstruct_host_check_data *) data;
 
   if (c->type == NEBTYPE_HOSTCHECK_PROCESSED)
-    {
-      //logger(LG_DEBUG, "HOSTCHECK_PROCESSED: %s", c->host_name);
-      char *buffer = NULL, *key = NULL;
+  {
+    //logger(LG_DEBUG, "HOSTCHECK_PROCESSED: %s", c->host_name);
+    char *buffer = NULL, *key = NULL;
 
-      size_t l = xstrlen(g_options.connector) + xstrlen(g_options.eventsource_name) + xstrlen(c->host_name) + 20; 
+    size_t l = xstrlen(g_options.connector) + xstrlen(g_options.eventsource_name) + xstrlen(c->host_name) + 20; 
 
-      nebstruct_host_check_data_to_json(&buffer, c); 
+    nebstruct_host_check_data_to_json(&buffer, c); 
 
-      // DO NOT FREE !!!
-      xalloca(key, xmin(g_options.max_size, (int)l) * sizeof(char));
+    // DO NOT FREE !!!
+    xalloca(key, xmin(g_options.max_size, (int)l) * sizeof(char));
 
-      snprintf(key, xmin(g_options.max_size, (int)l),
-                 "%s.%s.check.component.%s", g_options.connector,
-                 g_options.eventsource_name, c->host_name);
+    snprintf(key, xmin(g_options.max_size, (int)l),
+               "%s.%s.check.component.%s", g_options.connector,
+               g_options.eventsource_name, c->host_name);
 
-      if (c_size == -10000 || c_size / 2 == 0)
-          amqp_publish(key, buffer);
-      else
-          n2a_record_cache (key, buffer);
+    amqp_publish(key, buffer);
 
-      xfree(buffer);
-    }
+    xfree(buffer);
+  }
 
   return 0;
 }

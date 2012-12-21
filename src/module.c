@@ -23,7 +23,6 @@
 
 #include "broker.h"
 #include "neb2amqp.h"
-#include "cache.h"
 #include "module.h"
 
 NEB_API_VERSION (CURRENT_NEB_API_VERSION)
@@ -62,6 +61,7 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
   g_options.flush = -1;
   g_options.purge = FALSE;
   g_options.cache_file = "/usr/local/nagios/var/canopsis.cache";
+  g_options.pFifo = NULL;
 
   // Parse module options
   n2a_parse_arguments (args);
@@ -77,8 +77,8 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
       return 1;
    }
  
-  n2a_init_cache ();
-
+  //TODO
+  g_options.pFifo = fifo_init(g_options.cache_size, g_options.cache_file);
   amqp_connect ();
 
   register_callbacks ();
@@ -95,8 +95,14 @@ nebmodule_deinit (int flags __attribute__ ((__unused__)), int reason
   n2a_logger (LG_INFO, "deinitializing");
   
   deregister_callbacks ();
-  n2a_clear_cache ();
+
+  // TODO
+  //n2a_clear_cache ();
+
   amqp_disconnect ();
+
+  csync(g_options.pFifo);
+  free_fifo(g_options.pFifo);
  
   xfree (g_args);
 

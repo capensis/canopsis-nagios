@@ -24,7 +24,7 @@
 
 #define AMQP_MSG_SIZE_MAX 8192
 
-void amqp_connect (void);
+unsigned int amqp_connect (void);
 void amqp_disconnect (void);
 int amqp_publish (const char *routingkey, const char *message);
 

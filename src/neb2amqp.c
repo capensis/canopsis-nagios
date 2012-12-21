@@ -31,7 +31,6 @@
 #include <amqp_private.h>
 
 #include "neb2amqp.h"
-#include "cache.h"
 #include "module.h"
 #include "logger.h"
 
@@ -39,12 +38,14 @@ extern struct options g_options;
 
 static int sockfd;
 
+struct timeval now;
+
 static bool amqp_errors = false;
 static bool first = true;
 static int amqp_lastconnect = 0;
 static int amqp_wait_time = 10;
 
-unsigned int amqp_connected = FALSE;
+unsigned int amqp_connected = false;
 
 static amqp_connection_state_t conn = NULL;
 
@@ -121,64 +122,71 @@ on_amqp_error (amqp_rpc_reply_t x, char const *context)
 }
 
 
-void
+unsigned int
 amqp_connect (void)
 {
   amqp_errors = false;
 
-  struct timeval tv;
-  gettimeofday (&tv, NULL);
-  int now = tv.tv_sec;
+  gettimeofday (&now, NULL);
+  amqp_lastconnect = (int)now.tv_sec;
 
-  if ((amqp_lastconnect == 0) || (!amqp_connected && (now - amqp_lastconnect) >= amqp_wait_time) )
-  {
-    amqp_lastconnect = now;
-    amqp_connected = FALSE;
+  if (conn)
+	{
+      amqp_destroy_connection(conn);
+      amqp_socket_close(sockfd);
+	}
+	  
+  n2a_logger (LG_DEBUG, "AMQP: Opening socket");
+  on_error (sockfd = amqp_open_socket (g_options.hostname, g_options.port), "Opening socket");
 
-    if (conn)
-  	{
-        amqp_destroy_connection(conn);
-        amqp_socket_close(sockfd);
-  	}
-  	  
-    n2a_logger (LG_DEBUG, "AMQP: Opening socket");
-    on_error (sockfd = amqp_open_socket (g_options.hostname, g_options.port), "Opening socket");
+  if (!amqp_errors)
+	{
+      n2a_logger (LG_DEBUG, "AMQP: Init connection");
+      conn = amqp_new_connection ();
+	}
+	
+  if (!amqp_errors)
+	{
+	  amqp_set_sockfd (conn, sockfd);
 
-    if (!amqp_errors)
-  	{
-        n2a_logger (LG_DEBUG, "AMQP: Init connection");
-        conn = amqp_new_connection ();
-  	}
-  	
-    if (!amqp_errors)
-  	{
-  	  amqp_set_sockfd (conn, sockfd);
+	  n2a_logger (LG_DEBUG, "AMQP: Logging");
+	  on_amqp_error (amqp_login(conn, g_options.virtual_host, 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, g_options.userid, g_options.password), "Logging in");
+	}
 
-  	  n2a_logger (LG_DEBUG, "AMQP: Logging");
-  	  on_amqp_error (amqp_login(conn, g_options.virtual_host, 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, g_options.userid, g_options.password), "Logging in");
-  	}
+  if (!amqp_errors)
+	{
+	  n2a_logger (LG_DEBUG, "AMQP: Open channel");
+	  amqp_channel_open (conn, 1);
+	  on_amqp_error (amqp_get_rpc_reply (conn), "Opening channel");
+	}
 
-    if (!amqp_errors)
-  	{
-  	  n2a_logger (LG_DEBUG, "AMQP: Open channel");
-  	  amqp_channel_open (conn, 1);
-  	  on_amqp_error (amqp_get_rpc_reply (conn), "Opening channel");
-  	}
-
-    if (!amqp_errors){
-      n2a_logger (LG_INFO, "AMQP: Successfully connected");
-      amqp_connected = TRUE;
-    }
-        
-    if (amqp_connected)
-  	{
-      if (!first || g_options.purge) {
-        unsigned int force = TRUE;
-        n2a_pop_all_cache ((void *)&force);
-      }
-      first = false;
-  	}
+  if (!amqp_errors){
+    n2a_logger (LG_INFO, "AMQP: Successfully connected");
+    amqp_connected = true;
+  }else{
+    amqp_connected = false;
   }
+
+  return amqp_connected;
+}
+
+unsigned int
+amqp_check ()
+{
+  if (amqp_connected)
+    return amqp_connected;
+
+  amqp_connected = false;
+
+  gettimeofday (&now, NULL);
+
+  if ((amqp_lastconnect == 0) || (!amqp_connected && ((int)now.tv_sec - amqp_lastconnect) >= amqp_wait_time) )
+  {
+    n2a_logger (LG_DEBUG, "AMQP: Re-connect to amqp ...");
+    amqp_connect();
+  }  
+
+  return amqp_connected;
 }
 
 void
@@ -200,7 +208,7 @@ amqp_disconnect (void)
       on_error (amqp_destroy_connection (conn), "Ending connection");
       
       conn = NULL;
-      amqp_connected = FALSE;
+      amqp_connected = false;
 
       amqp_socket_close(sockfd);
       
@@ -215,10 +223,10 @@ amqp_disconnect (void)
 int
 amqp_publish (const char *routingkey, const char *message)
 {
-  if (! amqp_connected)
-    amqp_connect ();
+  //TODO
+  //CHECK CACHE
 
-  if (amqp_connected)
+  if (amqp_check())
   {
     amqp_basic_properties_t props;
     props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG | AMQP_BASIC_CONTENT_ENCODING_FLAG;
@@ -239,15 +247,18 @@ amqp_publish (const char *routingkey, const char *message)
 
     if (amqp_errors)
     {
-      n2a_record_cache (routingkey, message);
-      n2a_logger (LG_INFO, "AMQP: Error on publish");
+      //TODO Push
+      push(g_options.pFifo, event_init(routingkey, message));
+      n2a_logger (LG_ERR, "AMQP: Error on publish");
       amqp_disconnect ();
       return -1;
     }
     return 0;
 
   }else{
-    n2a_record_cache (routingkey, message);
+    //TODO
+    n2a_logger (LG_DEBUG, "AMQP: Push to cache");
+    push(g_options.pFifo, event_init(routingkey, message));
     return -1;
   }
 }
