@@ -26,7 +26,7 @@
 
 void amqp_connect (void);
 void amqp_disconnect (void);
-void amqp_publish (const char *routingkey, const char *message);
+int amqp_publish (const char *routingkey, const char *message);
 
 void on_error(int x, char const *context);
 void on_amqp_error(amqp_rpc_reply_t x, char const *context);

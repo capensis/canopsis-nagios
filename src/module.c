@@ -19,14 +19,16 @@
 
 #include "nagios.h"
 #include "logger.h"
-#include "strutil.h"
+#include "xutils.h"
 
 #include "broker.h"
 #include "neb2amqp.h"
-
+#include "cache.h"
 #include "module.h"
 
 NEB_API_VERSION (CURRENT_NEB_API_VERSION)
+
+static char *g_args = NULL;
 
 extern int event_broker_options;
 
@@ -52,6 +54,14 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
   g_options.exchange_name = "canopsis.events";
   g_options.log_level = 0;
   g_options.connector = "nagios";
+  g_options.max_size = 8192;
+  g_options.cache_size = 10000;
+  g_options.autosync = 60;
+  g_options.autoflush = 60;
+  g_options.rate = 5000;
+  g_options.flush = -1;
+  g_options.purge = FALSE;
+  g_options.cache_file = "/usr/local/nagios/var/canopsis.cache";
 
   // Parse module options
   n2a_parse_arguments (args);
@@ -67,6 +77,8 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
       return 1;
    }
  
+  n2a_init_cache ();
+
   amqp_connect ();
 
   register_callbacks ();
@@ -83,8 +95,11 @@ nebmodule_deinit (int flags __attribute__ ((__unused__)), int reason
   n2a_logger (LG_INFO, "deinitializing");
   
   deregister_callbacks ();
+  n2a_clear_cache ();
   amqp_disconnect ();
-  
+ 
+  xfree (g_args);
+
   return 0;
 }
 
@@ -97,9 +112,10 @@ n2a_parse_arguments (const char *args_orig)
   if (!args_orig)
     return;			// no arguments, use default options
 
-  char *args = strdup (args_orig);
+  g_args = xstrdup (args_orig);
+  char *save = g_args;
   char *token;
-  while (0 != (token = n2a_next_field (&args)))
+  while (0 != (token = n2a_next_field (&g_args)))
     {
       /* find = */
       char *part = token;
@@ -129,6 +145,83 @@ n2a_parse_arguments (const char *args_orig)
 	      g_options.log_level = strtol (right, NULL, 10);
 	      n2a_logger (LG_DEBUG, "Setting debug level to %d", g_options.log_level);
 	    }
+      else if (strcmp(left, "purge") == 0)
+        {
+          if (strncasecmp(right,"y", 1) == 0 || strncasecmp(right,"t", 1) == 0)
+              g_options.purge = TRUE;
+          else if (strncasecmp(right,"f", 1) == 0 || strncasecmp(right,"n", 1) == 0)
+              g_options.purge = FALSE;
+          else {
+              char *sav;
+              int r = strtol (right, &sav, 10);
+              if (right == sav)
+                  g_options.purge = FALSE;
+              else {
+                  switch (r) {
+                      case 1:
+                        g_options.purge = TRUE;
+                        break;
+                      case 0:
+                      default:
+                        g_options.purge = FALSE;
+                        break;
+                  }
+              }
+          }
+          n2a_logger (LG_DEBUG, "Setting purge to '%s'",
+              g_options.purge ? "true": "false");
+        }
+      else if (strcmp (left, "rate") == 0)
+        {
+          int r = strtol (right, NULL, 10);
+          if (r > 0) {
+              g_options.rate = r * 1000;
+              n2a_logger (LG_DEBUG, "Setting rate to %dms", r);
+          } else {
+              n2a_logger (LG_DEBUG, "Wrong value for option 'rate', leave it to %dms",
+                g_options.rate/1000);
+          }
+        }
+      else if (strcmp (left, "flush") == 0)
+        {
+          int r = strtol (right, NULL, 10);
+          if (r > 0 || r == -1) {
+              g_options.flush = r;
+              n2a_logger (LG_DEBUG, "Setting flush to %d messages", r);
+          } else {
+              n2a_logger (LG_DEBUG, "Wrong value for option 'flush', leave it to %d messages",
+                g_options.flush);
+          }
+        }
+      else if (strcmp(left, "max_size") == 0)
+        {
+          g_options.max_size = strtol(right, NULL, 10);
+          n2a_logger (LG_DEBUG, "Setting max_size buffer to %d bits",
+              g_options.max_size);
+        }
+      else if (strcmp (left, "autoflush") == 0)
+        {
+          g_options.autoflush = strtol (right, NULL, 10);
+          n2a_logger (LG_DEBUG, "Setting autoflush to %ds", g_options.autoflush);
+        }
+      else if (strcmp(left, "cache_size") == 0)
+        {
+          g_options.cache_size = strtol(right, NULL, 10);
+          n2a_logger (LG_DEBUG, "Setting cache_size to %d",
+              g_options.cache_size);
+        }
+      else if (strcmp(left, "cache_file") == 0)
+        {
+          g_options.cache_file = right;
+          n2a_logger (LG_DEBUG, "Setting cache_file to '%s'",
+              g_options.cache_file);
+        }
+      else if (strcmp(left, "autosync") == 0)
+        {
+          g_options.autosync = strtol(right, NULL, 10);
+          n2a_logger (LG_DEBUG, "Setting autosync to %ds",
+              g_options.autosync);
+        }
 	  else if (strcmp (left, "name") == 0)
 	    {
 	      g_options.eventsource_name = right;
@@ -188,4 +281,5 @@ n2a_parse_arguments (const char *args_orig)
 	    }
 	}
     }
+    g_args = save;
 }

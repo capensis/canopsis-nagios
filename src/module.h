@@ -31,6 +31,14 @@ int nebmodule_deinit(int flags __attribute__ ((__unused__)), int reason __attrib
 struct options {
 	char *hostname;
 	int port;
+    int max_size;
+    int cache_size;
+    int autosync;
+    int autoflush;
+    int rate;
+    int flush;
+    int purge;
+    char *cache_file;
 	char *userid;
 	char *password;
 	char *virtual_host;

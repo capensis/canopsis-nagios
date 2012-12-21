@@ -1,41 +1,40 @@
 /*
  * ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0
+ * Version: MIT
  *
- * The contents of this file are subject to the Mozilla Public License
- * Version 1.1 (the "License"); you may not use this file except in
- * compliance with the License. You may obtain a copy of the License
- * at http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS"
- * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
- * the License for the specific language governing rights and
- * limitations under the License.
- *
- * The Original Code is librabbitmq.
- *
- * The Initial Developer of the Original Code is VMware, Inc.
- * Portions created by VMware are Copyright (c) 2007-2011 VMware, Inc.
+ * Portions created by VMware are Copyright (c) 2007-2012 VMware, Inc.
+ * All Rights Reserved.
  *
  * Portions created by Tony Garnock-Jones are Copyright (c) 2009-2010
- * VMware, Inc. and Tony Garnock-Jones.
+ * VMware, Inc. and Tony Garnock-Jones. All Rights Reserved.
  *
- * All rights reserved.
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies
+ * of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * Alternatively, the contents of this file may be used under the terms
- * of the GNU General Public License Version 2 or later (the "GPL"), in
- * which case the provisions of the GPL are applicable instead of those
- * above. If you wish to allow use of your version of this file only
- * under the terms of the GPL, and not to allow others to use your
- * version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the
- * notice and other provisions required by the GPL. If you do not
- * delete the provisions above, a recipient may use your version of
- * this file under the terms of any one of the MPL or the GPL.
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
  *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  * ***** END LICENSE BLOCK *****
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include "amqp_private.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -43,44 +42,96 @@
 #include <stdarg.h>
 #include <assert.h>
 
-#include "amqp.h"
-#include "amqp_framing.h"
-#include "amqp_private.h"
-
-
 int amqp_open_socket(char const *hostname,
 		     int portnumber)
 {
-  int sockfd, res;
-  struct sockaddr_in addr;
-  struct hostent *he;
-  int one = 1; /* used as a buffer by setsockopt below */
+  struct addrinfo hint;
+  struct addrinfo *address_list;
+  struct addrinfo *addr;
+  char portnumber_string[33];
+  int sockfd = -1;
+  int last_error = 0;
+  int one = 1; /* for setsockopt */
 
-  res = amqp_socket_init();
-  if (res)
-    return res;
+  if (0 != (last_error = amqp_socket_init()))
+    return last_error;
 
-  he = gethostbyname(hostname);
-  if (he == NULL)
-    return -ERROR_GETHOSTBYNAME_FAILED;
+  memset(&hint, 0, sizeof(hint));
+  hint.ai_family = PF_UNSPEC; /* PF_INET or PF_INET6 */
+  hint.ai_socktype = SOCK_STREAM;
+  hint.ai_protocol = IPPROTO_TCP;
 
-  addr.sin_family = AF_INET;
-  addr.sin_port = htons(portnumber);
-  addr.sin_addr.s_addr = * (uint32_t *) he->h_addr_list[0];
+  (void)sprintf(portnumber_string, "%d", portnumber);
 
-  sockfd = socket(PF_INET, SOCK_STREAM, 0);
-  if (sockfd == -1)
-    return -amqp_socket_error();
+  last_error = getaddrinfo(hostname, portnumber_string, &hint, &address_list);
 
-  if (amqp_socket_setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &one,
-			     sizeof(one)) < 0
-      || connect(sockfd, (struct sockaddr *) &addr, sizeof(addr)) < 0)
+  if (last_error != 0)
   {
-    res = -amqp_socket_error();
-    amqp_socket_close(sockfd);
-    return res;
+    return -ERROR_GETHOSTBYNAME_FAILED;
   }
 
+  for (addr = address_list; addr; addr = addr->ai_next)
+  {
+    /*
+      This cast is to squash warnings on Win64, see:
+      http://stackoverflow.com/questions/1953639/is-it-safe-to-cast-socket-to-int-under-win64
+    */
+    sockfd = (int)socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+    if (-1 == sockfd)
+    {
+      last_error = -amqp_socket_error();
+      continue;
+    }
+
+    /*
+      Set SO_RCVTIMEO and SO_SNDTIMEO on socket
+    */
+    struct timeval timeout;      
+    timeout.tv_sec = 2;
+    timeout.tv_usec = 0;
+
+    if (0 != amqp_socket_setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) )
+    {
+      last_error = -amqp_socket_error();
+      amqp_socket_close(sockfd);
+      continue;
+    }
+    
+    if (0 != amqp_socket_setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) )
+    {
+      last_error = -amqp_socket_error();
+      amqp_socket_close(sockfd);
+      continue;
+    }
+
+#ifdef DISABLE_SIGPIPE_WITH_SETSOCKOPT
+    if (0 != amqp_socket_setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, &one, sizeof(one)))
+    {
+      last_error = -amqp_socket_error();
+      amqp_socket_close(sockfd);
+      continue;
+    }
+#endif /* DISABLE_SIGPIPE_WITH_SETSOCKOPT */
+    if (0 != amqp_socket_setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one))
+        || 0 != connect(sockfd, addr->ai_addr, addr->ai_addrlen))
+    {
+      last_error = -amqp_socket_error();
+      amqp_socket_close(sockfd);
+      continue;
+    }
+    else
+    {
+      last_error = 0;
+      break;
+    }
+  }
+
+  freeaddrinfo(address_list);
+  if (last_error != 0)
+  {
+    return last_error;
+  }
+  
   return sockfd;
 }
 
@@ -89,7 +140,7 @@ int amqp_send_header(amqp_connection_state_t state) {
 				     AMQP_PROTOCOL_VERSION_MAJOR,
 				     AMQP_PROTOCOL_VERSION_MINOR,
 				     AMQP_PROTOCOL_VERSION_REVISION };
-  return send(state->sockfd, (void *)header, 8, 0);
+  return send(state->sockfd, (void *)header, 8, MSG_NOSIGNAL);
 }
 
 static amqp_bytes_t sasl_method_name(amqp_sasl_method_enum method) {
@@ -374,7 +425,7 @@ static int amqp_login_inner(amqp_connection_state_t state,
 {
   int res;
   amqp_method_t method;
-  uint32_t server_frame_max;
+  int server_frame_max;
   uint16_t server_channel_max;
   uint16_t server_heartbeat;
 

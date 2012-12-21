@@ -24,13 +24,14 @@
 INCLUDES=-I../lib/ -I../src/ -I./
 CC=gcc
 #CFLAGS=-Wall -g -O2 -DHAVE_CONFIG_H
-CFLAGS=-Wall -g -O0 -DHAVE_CONFIG_H
+CFLAGS=-Wall -g -DHAVE_CONFIG_H
 
 LDFLAGS=
 LIBS=
 
 BROKERLIBS=-ldl
-BROKER_LDFLAGS=-Wall -rdynamic -lltdl
+BROKER_LDFLAGS=-Wall -rdynamic
+# -lltdl
 
 DBG_FLAGS=-DDEBUG=1
 #gcc -Wall -g -O2 -DHAVE_CONFIG_H -o test test.c -Wl,-export-dynamic  -lltdl  -I../lib/ -I../src/ -I./
@@ -44,5 +45,5 @@ test:
 clean:
 	rm -f test
 
-install:
-
+ini:
+	gcc -g -o testini -I../lib/iniparser/src ../lib/iniparser/src/*.c ini.c
