@@ -60,7 +60,7 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
   g_options.rate = 5000;
   g_options.flush = -1;
   g_options.purge = FALSE;
-  g_options.cache_file = "/usr/local/nagios/var/canopsis.cache";
+  g_options.cache_file = "/tmp/neb2amqp.cache";
   g_options.pFifo = NULL;
 
   // Parse module options

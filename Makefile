@@ -25,7 +25,7 @@ CC     = gcc
 
 CFLAGS = -fPIC -shared
 
-INCLUDES = -Ilib/jansson-2.3.1/src/ -Ilib/librabbitmq/ -Ilib/iniparser/src/ -Ilib/ -Isrc/
+INCLUDES = -Ilib/jansson-2.3.1/src/ -Ilib/librabbitmq/ -Ilib/ -Isrc/
 
 SUFFIXES = .o .c .h .a .so
 
@@ -44,14 +44,12 @@ COMPILE.c=$(CC) $(INCLUDES) $(CFLAGS) -c
 
 SRCS_JSON = $(wildcard lib/jansson-2.3.1/src/*.c)
 SRC_RMQ   = $(wildcard lib/librabbitmq/*.c)
-SRC_INI   = $(wildcard lib/iniparser/src/*.c)
 SRC_N2A   = $(wildcard src/*.c)
 
 OBJS_JSON = $(SRCS_JSON:.c=.o)
 OBJS_RMQ  = $(SRC_RMQ:.c=.o)
-OBJS_INI  = $(SRC_INI:.c=.o)
 
-default:    libjansson.a librabbitmq.a libiniparser.a neb2amqp.o
+default:    libjansson.a librabbitmq.a neb2amqp.o
 
 libjansson.a: $(OBJS_JSON)
 	@($(AR) $(ARFLAGS) libjansson.a $(OBJS_JSON))
@@ -59,22 +57,19 @@ libjansson.a: $(OBJS_JSON)
 librabbitmq.a: $(OBJS_RMQ)
 	@($(AR) $(ARFLAGS) librabbitmq.a $(OBJS_RMQ))
 
-libiniparser.a: $(OBJS_INI)
-	@($(AR) $(ARFLAGS) libiniparser.a $(OBJS_INI))
-
-neb2amqp.o: $(SRC_N2A) libjansson.a librabbitmq.a libiniparser.a
+neb2amqp.o: $(SRC_N2A) libjansson.a librabbitmq.a
 	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $^
 	@($(ECHO) "\n$@ compiled successfuly!")
 
-debug: $(SRC_N2A) libjansson.a librabbitmq.a libiniparser.a
+debug: $(SRC_N2A) libjansson.a librabbitmq.a
 	$(CC) $(INCLUDES) $(CFLAGS) -g -o neb2amqp.o $^ -DDEBUG
 	@($(ECHO) "\n$@ compiled successfuly!")
 
-fifo-bench: src/fifo.o
-	$(CC) -Isrc/ -o $@ test/$@.c $^
+fifo-bench: src/fifo.o src/logger.o
+	$(CC) $(INCLUDES) -g -o $@ test/$@.c $^
+
+simu: neb2amqp.o
+	$(CC) $(INCLUDES) -g -o $@ test/$@.c -ldl -Wall -rdynamic $^
 
 clean:
-	$(RM) $(OBJS_JSON) $(OBJS_RMQ) $(OBJS_INI)
-
-verryclean: 
-	$(RM) $(OBJS_JSON) $(OBJS_RMQ) $(OBJS_INI) libjansson.a librabbitmq.a libiniparser.a neb2amqp.o
+	$(RM) $(OBJS_JSON) $(OBJS_RMQ) libjansson.a librabbitmq.a neb2amqp.o fifo-bench simu

@@ -18,7 +18,7 @@
 # ---------------------------------*/
 
 #ifndef DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #endif
 
 #ifndef fifo_h
@@ -58,7 +58,7 @@ int push(fifo * pFifo, event * pEvent);
 event * shift(fifo * pFifo);
 event * pop(fifo * pFifo);
 
-void fifo_open_file(fifo * pFifo);
+int fifo_open_file(fifo * pFifo);
 int load(fifo * pFifo);
 int csync(fifo * pFifo);
 int clear(fifo * pFifo);

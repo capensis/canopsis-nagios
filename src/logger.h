@@ -28,12 +28,12 @@
 #include "config.h"
 
 // TODO: Really use log levels
-#define LG_INFO 262144
-#define LG_WARN  LOG_INFO
-#define LG_ERR   LOG_INFO
-#define LG_CRIT  LOG_INFO
+#define LG_INFO  262144
+#define LG_WARN  LG_INFO
+#define LG_ERR   LG_INFO
+#define LG_CRIT  LG_INFO
 #define LG_DEBUG 1
-#define LG_ALERT LOG_INFO
+#define LG_ALERT LG_INFO
 
 #ifdef __cplusplus
 extern "C" {

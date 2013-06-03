@@ -22,9 +22,19 @@
 #include <string.h>
 #include <time.h>
 
+#include "nagios.h"
+#include "module.h"
+
 #include "fifo.h"
 
-#define FIFO_PATH "/tmp/canopsis.fifo"
+#define FIFO_PATH "/tmp/bench.fifo"
+
+struct options g_options;
+
+int write_to_all_logs(char * msg,unsigned long priority){
+  printf("log: %s\n", msg);
+  return 0;
+}
 
 struct timeval now(){
   struct timeval tv;

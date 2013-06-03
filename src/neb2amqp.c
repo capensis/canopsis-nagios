@@ -61,7 +61,6 @@ on_error (int x, char const *context)
 
       amqp_errors = true;
     }
-
 }
 
 void
@@ -118,7 +117,6 @@ on_amqp_error (amqp_rpc_reply_t x, char const *context)
     }
 
   amqp_errors = true;
-
 }
 
 
@@ -234,7 +232,7 @@ amqp_publish (const char *routingkey, const char *message)
     props.content_encoding = amqp_cstring_bytes ("UTF-8");
     props.delivery_mode = 2;	/* persistent delivery mode */
     
-   int result = amqp_basic_publish (conn,
+    int result = amqp_basic_publish (conn,
 			    1,
 			    amqp_cstring_bytes (g_options.exchange_name),
 			    amqp_cstring_bytes (routingkey),

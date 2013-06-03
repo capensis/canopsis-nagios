@@ -21,13 +21,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "logger.h"
+
 #include "fifo.h"
 
 ////////// Functions
 fifo * fifo_init(int max_size, char * file_path){
-  if (DEBUG) printf("Init fifo\n");
-  if (DEBUG) printf(" + max_size:  %d\n", max_size);
-  if (DEBUG) printf(" + file_path: %s\n", file_path);
+  n2a_logger (LG_DEBUG, "FIFO: Init");
+  n2a_logger (LG_DEBUG, "FIFO:  + max_size:  %d", max_size);
+  n2a_logger (LG_DEBUG, "FIFO:  + file_path: %s", file_path);
 
   fifo * pFifo = (fifo *)malloc(sizeof(fifo));
 
@@ -40,12 +42,10 @@ fifo * fifo_init(int max_size, char * file_path){
   pFifo->file_path = strdup (file_path);
 
   pFifo->max_size = max_size;
-
-  int loaded = 0;
   
-  loaded = load(pFifo);
-  if (loaded != 0)
-    if (DEBUG)  printf("%d events loaded from fifo.", loaded);
+  int loaded = load(pFifo);
+
+  n2a_logger (LG_INFO, "FIFO: %d events loaded", loaded);
 
   return pFifo;
 }
@@ -70,40 +70,57 @@ event * event_init_nomalloc(const char * rk, const char * msg){
   return pEvent;
 }
 
-void fifo_open_file(fifo * pFifo){
+int fifo_open_file(fifo * pFifo){
   if (! pFifo->pFile){
-    if (DEBUG)  printf(" + Open fifo file '%s'\n", pFifo->file_path);
+    n2a_logger (LG_DEBUG, "FIFO: Open fifo file '%s'", pFifo->file_path);
+
     pFifo->pFile = fopen(pFifo->file_path, "r+");
     if (! pFifo->pFile)
       pFifo->pFile = fopen(pFifo->file_path, "w+");
+
+    if (! pFifo->pFile)
+      n2a_logger (LG_ERR, "FIFO: Impossible to open '%s'", pFifo->file_path);
+    else
+      n2a_logger (LG_INFO, "FIFO: File successfully opened");
+
+  }else{
+    n2a_logger (LG_DEBUG, "FIFO: '%s' already open", pFifo->file_path);
   }
+
+  if (pFifo->pFile)
+    return 0;
+
+  return 1;
 }
 
 int load(fifo * pFifo){
-  if (DEBUG)  printf("Load events from fifo file '%s'\n", pFifo->file_path);
+  n2a_logger (LG_DEBUG, "FIFO: Load events from file");
+
   int i = 0;
 
   if (pFifo->file_lock){
-    if (DEBUG) printf(" + Fifo is locked\n");
+    n2a_logger (LG_WARN, "FIFO: Fifo is locked");
     return 0;
   }
 
-  pFifo->file_lock = 1;
+  if (! fifo_open_file(pFifo))
+    return 0;
 
-  fifo_open_file(pFifo);
+  pFifo->file_lock = 1;
 
   rewind(pFifo->pFile);
 
-  if (DEBUG)  printf(" + Read fifo file\n");
   while(1){
     char rk[EVENT_MSG_MAX_SIZE];
     char msg[EVENT_MSG_MAX_SIZE];
 
+    // Read RK
     fgets(rk, EVENT_MSG_MAX_SIZE, pFifo->pFile);
 
     if (feof(pFifo->pFile))
       break;
 
+    // Read event
     fgets(msg, EVENT_MSG_MAX_SIZE, pFifo->pFile);
 
     // Remove \n
@@ -116,34 +133,45 @@ int load(fifo * pFifo){
     
     i += 1;
   }
-
+  
   pFifo->file_lock = 0;
 
-  if (DEBUG) printf(" + %d events loaded\n", i);
   return i;
 }
 
+int clear(fifo * pFifo){
+  n2a_logger (LG_DEBUG, "FIFO: Remove fifo file");
+
+  if (pFifo->pFile)
+    fclose(pFifo->pFile);
+
+  pFifo->pFile = NULL;
+  return unlink(pFifo->file_path);
+}
+
 int csync(fifo * pFifo){
-  if (DEBUG) printf("Sync fifo to hdd\n");
+  n2a_logger (LG_INFO, "FIFO: Sync fifo to file");
 
   if (! pFifo){
-    if (DEBUG) printf(" + Invalid fifo\n");
+    n2a_logger (LG_ERR, "FIFO: Invalid fifo");
     return 0;    
   }
   
   if (pFifo->file_lock){
-    if (DEBUG) printf(" + Fifo is locked\n");
+    n2a_logger (LG_WARN, "FIFO: Fifo file is locked");
     return 0;
   }
 
   pFifo->file_lock = 1;
-  
-  int i = 0;
 
-  //Todo: tweak this
   clear(pFifo);
 
-  fifo_open_file(pFifo);
+  if (! fifo_open_file(pFifo)){
+    pFifo->file_lock = 0;
+    return 0;
+  }
+
+  int i = 0;
 
   if (pFifo->first){
 
@@ -155,30 +183,22 @@ int csync(fifo * pFifo){
       pEvent = pEvent->pNext;
     }
   }
-  if (DEBUG) printf(" + %d events synced\n", i);
+
+  fflush(pFifo->pFile);
+  
+  n2a_logger (LG_INFO, "FIFO: %d events written to file");
 
   pFifo->file_lock = 0;
   
   return i;
 }
 
-int clear(fifo * pFifo){
-  if (DEBUG) printf("Clear fifo file\n");
-  if (pFifo->pFile){
-    if (DEBUG) printf(" + Close\n");
-    fclose(pFifo->pFile);
-  }
-
-  pFifo->pFile = NULL;
-  if (DEBUG) printf(" + Unlink\n");
-  return unlink(pFifo->file_path);
-}
-
 int push(fifo * pFifo, event * pEvent ){
 
-  if (DEBUG) printf("Push event to fifo\n");
+  n2a_logger (LG_DEBUG, "FIFO: Push to queue (%s)", pFifo->size);
+
   if (pFifo->size >= pFifo->max_size){
-    if (DEBUG) printf(" + Fifo si full, shift fisrt event\n");
+    n2a_logger (LG_WARN, "FIFO: Queue is full, remove old event");
     event * pEvent = shift(pFifo);
     free_event(pEvent);
   }
@@ -193,8 +213,6 @@ int push(fifo * pFifo, event * pEvent ){
   }
 
   pFifo->size += 1;
-
-  if (DEBUG) printf(" + Done, fifo size: %d\n", pFifo->size);
 
   return pFifo->size;
 }
@@ -253,7 +271,11 @@ void free_event(event * pEvent){
 }
 
 void free_fifo(fifo * pFifo){
-  if (DEBUG) printf("Freeing fifo\n");
+  n2a_logger (LG_DEBUG, "FIFO: Freeing fifo");
+
+  if (pFifo->size)
+    csync(pFifo);
+
   if (pFifo->first){
     event * pEvent = pFifo->first;
     event * pNext = NULL;
@@ -265,19 +287,14 @@ void free_fifo(fifo * pFifo){
     }while(pNext != NULL);
   }
 
-  if (pFifo->pFile){
-    if (DEBUG) printf(" + Flush fifo file\n");
-    fflush(pFifo->pFile);
-    if (DEBUG) printf(" + Close fifo file\n");
+  if (pFifo->pFile)
     fclose(pFifo->pFile);
-  }
 
   free(pFifo->file_path);
   free(pFifo);
 }
 
 ////////// For Debug
-
 void print_event(event * pEvent){
   if (pEvent){
     printf("%s -> %s\n", pEvent->rk, pEvent->msg);
