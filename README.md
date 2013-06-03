@@ -32,7 +32,7 @@ via HTTP:
 
 Copy NEB in your Nagios/Icinga installation:
 
-    sudo cp src/neb2amqp.o /usr/local/nagios/bin/
+    sudo cp neb2amqp.o /usr/local/nagios/bin/
 
 
 ## Configure ##
