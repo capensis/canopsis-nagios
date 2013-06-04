@@ -81,8 +81,14 @@ int main(int argc, char *argv[]){
   printf("\nPOP:\n");
   pEvent = pop(pFifo);
   print_event(pEvent);
-  free_event(pEvent);
 
+  printf("\nPREPEND:\n");
+  print_fifo(pFifo);
+  prepand(pFifo, pEvent);
+  print_fifo(pFifo);
+  prepand(pFifo, event_init("rk12","prepand1"));
+  prepand(pFifo, event_init("rk13","prepand2"));
+  print_fifo(pFifo);
 
   printf("\nSECOND PUSH:\n");
   push(pFifo, event_init("rk12","push1"));

@@ -27,6 +27,8 @@
 #define EVENT_RK_MAX_SIZE 8192
 #define EVENT_MSG_MAX_SIZE 8192
 
+#include <stdbool.h>
+
 ////////// Structures
 typedef struct sEvent event;
 typedef struct sFifo fifo;
@@ -41,11 +43,12 @@ struct sEvent {
 struct sFifo {
   event * first;
   event * last;
-  int size;
-  int max_size;
+  unsigned int size;
+  unsigned int max_size;
   char * file_path;
   FILE * pFile;
-  int file_lock;
+  bool file_lock;
+  bool dirty;
 };
 
 ////////// Headers
@@ -55,6 +58,7 @@ event * event_init(const char * rk, const char * msg);
 event * event_init_nomalloc(const char * rk, const char * msg);
 
 int push(fifo * pFifo, event * pEvent);
+int prepand(fifo * pFifo, event * pEvent);
 event * shift(fifo * pFifo);
 event * pop(fifo * pFifo);
 
@@ -62,7 +66,6 @@ int fifo_open_file(fifo * pFifo);
 int load(fifo * pFifo);
 int csync(fifo * pFifo);
 int clear(fifo * pFifo);
-
 
 void free_event(event * pEvent);
 void free_fifo(fifo * pFifo);

@@ -34,12 +34,12 @@ struct options {
 	char *hostname;
 	int port;
     int max_size;
-    int cache_size;
     int autosync;
     int autoflush;
     int rate;
     int flush;
     int purge;
+    int cache_size;
     char *cache_file;
 	char *userid;
 	char *password;

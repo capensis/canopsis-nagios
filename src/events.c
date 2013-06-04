@@ -33,21 +33,21 @@ extern struct options g_options;
 int g_last_event_program_status = 0;
 
 // Define a macro that will handle the split of messages
-#define split_message(message,field)                                               \
-do {                                                                               \
-    temp = ((int)xstrlen(message)/left + 1);                                       \
-    i = 0;                                                                         \
-    while (i < temp) {                                                             \
-        nebstruct_service_check_data_update_json(&jdata, message, field, left, i); \
-        char *json = json_dumps(jdata, 0);                                         \
-        size_t len = xstrlen (json);                                               \
-        buffer = xmalloc (len + 1);                                                \
-        snprintf (buffer, len + 1, "%s", json);                                    \
-        amqp_publish(key, buffer);                                                 \
-        xfree(buffer);                                                             \
-        xfree (json);                                                              \
-        i++;                                                                       \
-    }                                                                              \
+#define split_message(message,field)                                                  \
+do {                                                                                  \
+    temp = ((int)xstrlen(message)/left + 1);                                          \
+    i = 0;                                                                            \
+    while (i < temp) {                                                                \
+        nebstruct_service_check_data_update_json(&jdata, message, field, left, i);    \
+        char *json = json_dumps(jdata, 0);                                            \
+        size_t len = xstrlen (json);                                                  \
+        buffer = xmalloc (len + 1);                                                   \
+        snprintf (buffer, len + 1, "%s", json);                                       \
+        send_event(key, buffer);                                                      \
+        xfree (buffer);                                                               \
+        xfree (json);                                                                 \
+        i++;                                                                          \
+    }                                                                                 \
 } while(0);
 
 
@@ -85,7 +85,7 @@ n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *data
 
           snprintf (buffer, message_size + 1, "%s", json);
 
-          amqp_publish(key, buffer);
+          send_event(key, buffer);
 
           xfree(buffer);
           xfree (json);
@@ -97,6 +97,7 @@ n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *data
           int msgs = ((int)l_out/left + 1) + ((int)out/left + 1) + ((int)perf/left + 1);
           n2a_logger(LG_INFO, "Data too long... sending %d messages for host: %s, service: %s", msgs, c->host_name, c->service_description);
           int i, temp;
+
           split_message(c->long_output, "long_output");
           split_message(c->output, "output");
           split_message(c->perf_data, "perf_data");
@@ -132,7 +133,7 @@ n2a_event_host_check (int event_type __attribute__ ((__unused__)), void *data)
                "%s.%s.check.component.%s", g_options.connector,
                g_options.eventsource_name, c->host_name);
 
-    amqp_publish(key, buffer);
+    send_event(key, buffer);
 
     xfree(buffer);
   }
@@ -169,7 +170,7 @@ event_program_status (int event_type __attribute__ ((__unused__)), void *data)
       char buffer[AMQP_MSG_SIZE_MAX];
       //TODO
       //nebstruct_program_status_data_to_json(buffer, ps);
-      //amqp_publish (exchange_name, routingkey, buffer);
+      //send_event (exchange_name, routingkey, buffer);
       g_last_event_program_status = (int) ps->timestamp.tv_sec;
     }
   return 0;
@@ -190,7 +191,7 @@ event_acknowledgement (int event_type
       char buffer[AMQP_MSG_SIZE_MAX];
       //TODO
       //nebstruct_acknowledgement_data_to_json(buffer, c);
-      //amqp_publish (exchange_name, routingkey, buffer);
+      //send_event (exchange_name, routingkey, buffer);
 
     }
   else if (c->type == NEBTYPE_ACKNOWLEDGEMENT_REMOVE)
@@ -222,7 +223,7 @@ event_downtime (int event_type __attribute__ ((__unused__)), void *data)
       char buffer[AMQP_MSG_SIZE_MAX];
       //TODO
       //nebstruct_downtime_data_to_json(buffer, c);
-      //amqp_publish (exchange_name, routingkey, buffer);
+      //send_event (exchange_name, routingkey, buffer);
     }
 
   return 0;
@@ -248,7 +249,7 @@ event_comment (int event_type __attribute__ ((__unused__)), void *data)
       char buffer[AMQP_MSG_SIZE_MAX];
       //TODO
       //nebstruct_comment_data_to_json(buffer, c);
-      //amqp_publish (exchange_name, routingkey, buffer);
+      //send_event (exchange_name, routingkey, buffer);
     }
 
   return 0;

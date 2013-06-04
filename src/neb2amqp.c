@@ -45,9 +45,28 @@ static bool first = true;
 static int amqp_lastconnect = 0;
 static int amqp_wait_time = 10;
 
-unsigned int amqp_connected = false;
+static int fifo_last_sync = 0;
+
+bool amqp_connected = false;
+
+bool blackout = false;
 
 static amqp_connection_state_t conn = NULL;
+
+bool
+toggle_blackout (void)
+{
+  if (! blackout){
+    n2a_logger (LG_INFO, "AMQP: !!!! BLACKOUT !!!!");
+    amqp_disconnect();
+    blackout = true;
+  }else{
+    n2a_logger (LG_INFO, "AMQP: Disable blackout");
+    blackout = false;
+  }
+
+  return blackout;
+}
 
 void
 on_error (int x, char const *context)
@@ -119,8 +138,7 @@ on_amqp_error (amqp_rpc_reply_t x, char const *context)
   amqp_errors = true;
 }
 
-
-unsigned int
+bool
 amqp_connect (void)
 {
   amqp_errors = false;
@@ -147,7 +165,7 @@ amqp_connect (void)
 	{
 	  amqp_set_sockfd (conn, sockfd);
 
-	  n2a_logger (LG_DEBUG, "AMQP: Logging");
+	  n2a_logger (LG_DEBUG, "AMQP: Login");
 	  on_amqp_error (amqp_login(conn, g_options.virtual_host, 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, g_options.userid, g_options.password), "Logging in");
 	}
 
@@ -168,9 +186,57 @@ amqp_connect (void)
   return amqp_connected;
 }
 
-unsigned int
-amqp_check ()
+void
+fifo_check(void)
 {
+  if (amqp_connected && g_options.pFifo->size > 0){
+    n2a_logger (LG_DEBUG, "AMQP: Shift queue, size: %d", g_options.pFifo->size);
+
+    int size = g_options.pFifo->size;
+    bool state;
+    int i;
+
+    int flush = g_options.flush;
+
+    if (flush == -1)
+      flush = (int)(g_options.cache_size / 5);
+
+    for (i=0; i<flush; i++) {
+      event * pEvent = shift(g_options.pFifo);
+
+      // End of fifo
+      if (pEvent == NULL)
+        break;
+
+      if (! amqp_publish(pEvent->rk, pEvent->msg)){
+        // Shift
+        push(g_options.pFifo, pEvent);
+        break;
+
+      } else {
+        free_event(pEvent);
+      }
+    }
+
+    n2a_logger (LG_INFO, "AMQP: %d/%d events shifted from Queue, new size: %d", i, size, g_options.pFifo->size);
+
+  }
+
+  // Save queue
+  gettimeofday (&now, NULL);
+  if ( ((int)now.tv_sec - fifo_last_sync) >= g_options.autosync) {
+    csync(g_options.pFifo);
+    fifo_last_sync = (int)now.tv_sec;
+  }
+
+}
+
+bool
+amqp_check (void)
+{
+  if (blackout)
+    return false;
+
   if (amqp_connected)
     return amqp_connected;
 
@@ -218,45 +284,50 @@ amqp_disconnect (void)
     }
 }
 
-int
+bool
 amqp_publish (const char *routingkey, const char *message)
 {
-  //TODO
-  //CHECK CACHE
+  amqp_basic_properties_t props;
+  props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG | AMQP_BASIC_CONTENT_ENCODING_FLAG;
+  props.content_type = amqp_cstring_bytes ("application/json");
+  props.content_encoding = amqp_cstring_bytes ("UTF-8");
+  props.delivery_mode = 2;	/* persistent delivery mode */
 
-  if (amqp_check())
+  int result = amqp_basic_publish (conn,
+      1,
+      amqp_cstring_bytes (g_options.exchange_name),
+      amqp_cstring_bytes (routingkey),
+      0,
+      0,
+      &props,
+      amqp_cstring_bytes (message));
+
+  on_error (result, "Publishing");
+
+  if (amqp_errors)
   {
-    amqp_basic_properties_t props;
-    props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG | AMQP_BASIC_CONTENT_ENCODING_FLAG;
-    props.content_type = amqp_cstring_bytes ("application/json");
-    props.content_encoding = amqp_cstring_bytes ("UTF-8");
-    props.delivery_mode = 2;	/* persistent delivery mode */
-    
-    int result = amqp_basic_publish (conn,
-			    1,
-			    amqp_cstring_bytes (g_options.exchange_name),
-			    amqp_cstring_bytes (routingkey),
-			    0,
-			    0,
-			    &props,
-			    amqp_cstring_bytes (message));
-
-    on_error (result, "Publishing");
-
-    if (amqp_errors)
-    {
-      //TODO Push
-      push(g_options.pFifo, event_init(routingkey, message));
-      n2a_logger (LG_ERR, "AMQP: Error on publish");
-      amqp_disconnect ();
-      return -1;
-    }
-    return 0;
-
-  }else{
-    //TODO
-    n2a_logger (LG_DEBUG, "AMQP: Push to cache");
-    push(g_options.pFifo, event_init(routingkey, message));
-    return -1;
+    n2a_logger (LG_ERR, "AMQP: Error on publish");
+    amqp_disconnect ();
+    return false;
   }
+
+  return true;
+}
+
+int
+send_event (const char *routingkey, const char *message)
+{
+  int amqp_state = amqp_check();
+
+  fifo_check();
+
+  if (amqp_state && g_options.pFifo->size == 0)
+
+    if (! amqp_publish(routingkey, message))
+      return push(g_options.pFifo, event_init(routingkey, message));
+    else
+      return 0;
+
+  else
+    return push(g_options.pFifo, event_init(routingkey, message));
 }

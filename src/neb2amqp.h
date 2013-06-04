@@ -21,14 +21,18 @@
 #define _neb2amqp_h_
 
 #include <amqp.h>
+#include <stdbool.h>
 
 #define AMQP_MSG_SIZE_MAX 8192
 
-unsigned int amqp_connect (void);
+bool amqp_connect (void);
 void amqp_disconnect (void);
-int amqp_publish (const char *routingkey, const char *message);
+bool amqp_publish (const char *routingkey, const char *message);
+int send_event (const char *routingkey, const char *message);
 
 void on_error(int x, char const *context);
 void on_amqp_error(amqp_rpc_reply_t x, char const *context);
+
+bool toggle_blackout (void);
 
 #endif

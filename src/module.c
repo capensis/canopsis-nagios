@@ -79,7 +79,7 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
  
   //TODO
   g_options.pFifo = fifo_init(g_options.cache_size, g_options.cache_file);
-  amqp_connect ();
+  amqp_check ();
 
   register_callbacks ();
 
@@ -96,12 +96,8 @@ nebmodule_deinit (int flags __attribute__ ((__unused__)), int reason
   
   deregister_callbacks ();
 
-  // TODO
-  //n2a_clear_cache ();
-
   amqp_disconnect ();
 
-  csync(g_options.pFifo);
   free_fifo(g_options.pFifo);
  
   xfree (g_args);
