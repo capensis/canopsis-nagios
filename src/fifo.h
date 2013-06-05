@@ -49,6 +49,7 @@ struct sFifo {
   FILE * pFile;
   bool file_lock;
   bool dirty;
+  bool full;
 };
 
 ////////// Headers

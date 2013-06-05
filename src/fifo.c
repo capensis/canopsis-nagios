@@ -42,6 +42,7 @@ fifo * fifo_init(int max_size, char * file_path){
   pFifo->size = 0;
   pFifo->file_lock = false;
   pFifo->dirty = false;
+  pFifo->full = false;
 
   pFifo->file_path = strdup (file_path);
 
@@ -85,7 +86,7 @@ int fifo_open_file(fifo * pFifo){
     if (! pFifo->pFile)
       n2a_logger (LG_ERR, "FIFO: Impossible to open '%s'", pFifo->file_path);
     else
-      n2a_logger (LG_INFO, "FIFO: File successfully opened");
+      n2a_logger (LG_DEBUG, "FIFO: File successfully opened");
 
   }else{
     n2a_logger (LG_DEBUG, "FIFO: '%s' already open", pFifo->file_path);
@@ -138,6 +139,12 @@ int load(fifo * pFifo){
     i += 1;
   }
   
+  if (pFifo->pFile){
+    n2a_logger (LG_DEBUG, "FIFO: Close file");
+    fclose(pFifo->pFile);
+    pFifo->pFile = NULL;
+  }
+
   pFifo->file_lock = false;
 
   return i;
@@ -153,6 +160,17 @@ int clear(fifo * pFifo){
   return unlink(pFifo->file_path);
 }
 
+int check_size(fifo * pFifo){
+  if (pFifo->size >= pFifo->max_size && ! pFifo->full){
+    pFifo->full = true;
+    n2a_logger (LG_WARN, "FIFO: Queue is full, drop events ...");
+  }
+
+  if (pFifo->size < pFifo->max_size)
+    pFifo->full = false;
+
+}
+
 int csync(fifo * pFifo){
 
   if (! pFifo){
@@ -165,7 +183,7 @@ int csync(fifo * pFifo){
     return 0;
   }
 
-  n2a_logger (LG_INFO, "FIFO: Sync %d events to file", pFifo->size);
+  n2a_logger (LG_DEBUG, "FIFO: Sync %d events to file", pFifo->size);
   
   if (pFifo->file_lock){
     n2a_logger (LG_WARN, "FIFO: Fifo file is locked");
@@ -208,10 +226,10 @@ int push(fifo * pFifo, event * pEvent ){
 
   n2a_logger (LG_DEBUG, "FIFO: Push (%d)", pFifo->size);
 
-  if (pFifo->size >= pFifo->max_size){
-    n2a_logger (LG_WARN, "FIFO: Queue is full, remove old event");
+  check_size(pFifo);
+
+  if (pFifo->full)
     free_event(shift(pFifo));
-  }
 
   if (pFifo->first == NULL){
     pFifo->first = pEvent;
@@ -232,10 +250,10 @@ int prepand(fifo * pFifo, event * pEvent){
 
   n2a_logger (LG_DEBUG, "FIFO: Prepand (%d)", pFifo->size);
 
-  if (pFifo->size >= pFifo->max_size){
-    n2a_logger (LG_WARN, "FIFO: Queue is full, remove newest event");
+  check_size(pFifo);
+
+  if (pFifo->full)
     free_event(pop(pFifo));
-  }
 
   if (pFifo->first == NULL){
     pFifo->first = pEvent;
@@ -331,6 +349,7 @@ void free_fifo(fifo * pFifo){
   if (pFifo->pFile){
     n2a_logger (LG_DEBUG, "FIFO: Close file");
     fclose(pFifo->pFile);
+    pFifo->pFile = NULL;
   }
 
   free(pFifo->file_path);

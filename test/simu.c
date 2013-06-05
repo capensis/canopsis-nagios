@@ -112,7 +112,7 @@ int main (void)
     char *error = NULL;
     void *func;
 
-	char * args = "name=Debug 127.0.0.1 flush=10 debug=1";
+	char * args = "name=Debug 127.0.0.1 flush=10 debug=1 cache_file=/tmp/simu.cache";
 	char * filename = "./neb2amqp.o";
 	int should_be_loaded = 1;
 	
