@@ -112,7 +112,7 @@ int main (void)
     char *error = NULL;
     void *func;
 
-	char * args = "name=Debug 127.0.0.1 debug=1";
+	char * args = "name=Debug 127.0.0.1 flush=10 debug=1";
 	char * filename = "./neb2amqp.o";
 	int should_be_loaded = 1;
 	
@@ -192,16 +192,12 @@ int main (void)
 	sleep(1);
 
 	toggle_blackout();
-
-	simu_send_event(0.1, 1000, check1);
-
+	simu_send_event(0.1, 10, check1);
 	toggle_blackout();
 
-	simu_send_event(1.0, 5, check1);
 
 	sleep(1);
-
-	simu_send_event(1.0, 5, check1);
+	simu_send_event(1.0, 20, check1);
 
 	/* ############################# END ############################## */
 

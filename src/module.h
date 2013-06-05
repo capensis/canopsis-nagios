@@ -36,6 +36,7 @@ struct options {
     int max_size;
     int autosync;
     int autoflush;
+    int flush_interval;
     int rate;
     int flush;
     int purge;

@@ -57,6 +57,7 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
   g_options.cache_size = 10000;
   g_options.autosync = 60;
   g_options.autoflush = 60;
+  g_options.flush_interval = 5;
   g_options.rate = 5000;
   g_options.flush = -1;
   g_options.purge = FALSE;
@@ -205,6 +206,11 @@ n2a_parse_arguments (const char *args_orig)
         {
           g_options.autoflush = strtol (right, NULL, 10);
           n2a_logger (LG_DEBUG, "Setting autoflush to %ds", g_options.autoflush);
+        }
+      else if (strcmp (left, "flush_interval") == 0)
+        {
+          g_options.flush_interval = strtol (right, NULL, 10);
+          n2a_logger (LG_DEBUG, "Setting flush_interval to %ds", g_options.autoflush);
         }
       else if (strcmp(left, "cache_size") == 0)
         {

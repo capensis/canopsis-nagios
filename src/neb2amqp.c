@@ -42,10 +42,12 @@ struct timeval now;
 
 static bool amqp_errors = false;
 static bool first = true;
-static int amqp_lastconnect = 0;
+
+static int amqp_last_connect = 0;
 static int amqp_wait_time = 10;
 
 static int fifo_last_sync = 0;
+static int fifo_last_flush = 0;
 
 bool amqp_connected = false;
 
@@ -144,7 +146,7 @@ amqp_connect (void)
   amqp_errors = false;
 
   gettimeofday (&now, NULL);
-  amqp_lastconnect = (int)now.tv_sec;
+  amqp_last_connect = (int)now.tv_sec;
 
   if (conn)
 	{
@@ -179,6 +181,9 @@ amqp_connect (void)
   if (!amqp_errors){
     n2a_logger (LG_INFO, "AMQP: Successfully connected");
     amqp_connected = true;
+
+    // Force fifo flush
+    fifo_last_flush = 0;
   }else{
     amqp_connected = false;
   }
@@ -189,7 +194,15 @@ amqp_connect (void)
 void
 fifo_check(void)
 {
-  if (amqp_connected && g_options.pFifo->size > 0){
+  gettimeofday (&now, NULL);
+  int timestamp = (int)now.tv_sec;
+  int elapsed;
+
+  // Flush queue
+  elapsed = timestamp - fifo_last_flush;
+
+  if (amqp_connected && g_options.pFifo->size > 0 && elapsed >= g_options.flush_interval){
+
     n2a_logger (LG_DEBUG, "AMQP: Shift queue, size: %d", g_options.pFifo->size);
 
     int size = g_options.pFifo->size;
@@ -199,7 +212,10 @@ fifo_check(void)
     int flush = g_options.flush;
 
     if (flush == -1)
-      flush = (int)(g_options.cache_size / 5);
+      flush = (int)(g_options.cache_size / 10);
+
+    if (flush > 1000)
+      flush = 1000;
 
     for (i=0; i<flush; i++) {
       event * pEvent = shift(g_options.pFifo);
@@ -209,8 +225,7 @@ fifo_check(void)
         break;
 
       if (! amqp_publish(pEvent->rk, pEvent->msg)){
-        // Shift
-        push(g_options.pFifo, pEvent);
+        prepand(g_options.pFifo, pEvent);
         break;
 
       } else {
@@ -219,16 +234,17 @@ fifo_check(void)
     }
 
     n2a_logger (LG_INFO, "AMQP: %d/%d events shifted from Queue, new size: %d", i, size, g_options.pFifo->size);
-
+    fifo_last_flush = timestamp;
   }
 
   // Save queue
-  gettimeofday (&now, NULL);
-  if ( ((int)now.tv_sec - fifo_last_sync) >= g_options.autosync) {
-    csync(g_options.pFifo);
-    fifo_last_sync = (int)now.tv_sec;
-  }
+  elapsed = timestamp - fifo_last_sync;
 
+  if ( elapsed >= g_options.autosync) {
+    csync(g_options.pFifo);
+
+    fifo_last_sync = timestamp;
+  }
 }
 
 bool
@@ -243,8 +259,10 @@ amqp_check (void)
   amqp_connected = false;
 
   gettimeofday (&now, NULL);
+  int timestamp = (int)now.tv_sec;
+  int elapsed = timestamp - amqp_last_connect;
 
-  if ((amqp_lastconnect == 0) || (!amqp_connected && ((int)now.tv_sec - amqp_lastconnect) >= amqp_wait_time) )
+  if ((amqp_last_connect == 0) || (!amqp_connected && elapsed >= amqp_wait_time) )
   {
     n2a_logger (LG_DEBUG, "AMQP: Re-connect to amqp ...");
     amqp_connect();
