@@ -211,11 +211,12 @@ fifo_check(void)
 
     int flush = g_options.flush;
 
-    if (flush == -1)
-      flush = (int)(g_options.cache_size / 10);
-
-    if (flush > 1000)
-      flush = 1000;
+    if (flush == -1){
+      flush = (int)(g_options.cache_size / 5);
+      
+      if (flush > 1000)
+        flush = 1000;
+    }
 
     for (i=0; i<flush; i++) {
       event * pEvent = shift(g_options.pFifo);
