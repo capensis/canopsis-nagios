@@ -82,7 +82,7 @@ nebmodule_init (int flags __attribute__ ((__unused__)), char *args, nebmodule *h
   g_options.pFifo = fifo_init(g_options.cache_size, g_options.cache_file);
   amqp_check ();
 
-  register_callbacks ();
+  n2a_register_callbacks ();
 
   n2a_logger (LG_INFO, "successfully finished initialization");
 
@@ -95,7 +95,7 @@ nebmodule_deinit (int flags __attribute__ ((__unused__)), int reason
 {
   n2a_logger (LG_INFO, "deinitializing");
   
-  deregister_callbacks ();
+  n2a_deregister_callbacks ();
 
   amqp_disconnect ();
 
