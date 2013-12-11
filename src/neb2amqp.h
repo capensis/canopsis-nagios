@@ -25,6 +25,7 @@
 
 #define AMQP_MSG_SIZE_MAX 8192
 
+bool n2a_amqp_check (void);
 bool n2a_amqp_connect (void);
 void n2a_amqp_disconnect (void);
 bool n2a_amqp_publish (const char *routingkey, const char *message);

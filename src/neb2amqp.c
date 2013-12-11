@@ -33,6 +33,7 @@
 #include "neb2amqp.h"
 #include "module.h"
 #include "logger.h"
+#include "xutils.h"
 
 extern struct options g_options;
 
@@ -224,7 +225,6 @@ void n2a_fifo_check (void)
     if (amqp_connected && g_options.pFifo->size > 0 && elapsed >= g_options.flush_interval)
     {
         int size = g_options.pFifo->size;
-        bool state;
         int i;
 
         int flush = g_options.flush;
@@ -297,7 +297,7 @@ bool n2a_amqp_check (void)
     timestamp = (int) now.tv_sec;
     elapsed = timestamp - amqp_last_connect;
 
-    if ((amqp_last_connect == 0) || (!amqp_connected && elapsed >= amqp_wait_time) )
+    if ((amqp_last_connect == 0) || (!amqp_connected && elapsed >= amqp_wait_time))
     {
         n2a_logger (LG_DEBUG, "AMQP: Re-connect to amqp ...");
         n2a_amqp_connect ();

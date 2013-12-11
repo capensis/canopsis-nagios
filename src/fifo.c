@@ -176,7 +176,7 @@ int n2a_clear (fifo *pFifo)
     return unlink (pFifo->file_path);
 }
 
-int n2a_check_size (fifo *pFifo)
+void n2a_check_size (fifo *pFifo)
 {
     if (pFifo->size >= pFifo->max_size && ! pFifo->full)
     {

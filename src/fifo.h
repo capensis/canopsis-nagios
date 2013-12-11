@@ -62,7 +62,7 @@ int n2a_fifo_open_file (fifo *pFifo);
 int n2a_load (fifo *pFifo);
 int n2a_csync (fifo *pFifo);
 int n2a_clear (fifo *pFifo);
-int n2a_check_size (fifo * pFifo);
+void n2a_check_size (fifo * pFifo);
 
 void n2a_free_event (event *pEvent);
 void n2a_free_fifo (fifo *pFifo);
