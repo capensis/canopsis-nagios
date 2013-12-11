@@ -72,7 +72,7 @@ int n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *
         json_t *jdata = NULL;
         size_t message_size = 0;
 
-        int nbmsg = nebstruct_service_check_data_to_json (c, &jdata, &message_size); 
+        int nbmsg = n2a_nebstruct_service_check_data_to_json (c, &jdata, &message_size);
 
         size_t l = 20; /* "..check.ressource.." + \0 = 20 chars */
 
@@ -141,13 +141,13 @@ int n2a_event_host_check (int event_type __attribute__ ((__unused__)), void *dat
 
         size_t l = 20;
 
-        l += xstrlen(g_options.connector);
-        l += xstrlen(g_options.eventsource_name);
-        l += xstrlen(c->host_name); 
+        l += xstrlen (g_options.connector);
+        l += xstrlen (g_options.eventsource_name);
+        l += xstrlen (c->host_name);
 
-        nebstruct_host_check_data_to_json(&buffer, c); 
+        n2a_nebstruct_host_check_data_to_json (&buffer, c);
 
-        xalloca (key, xmin (g_options.max_size, (int) l) * sizeof(char));
+        xalloca (key, xmin (g_options.max_size, (int) l) * sizeof (char));
 
         snprintf (key, xmin (g_options.max_size, (int) l),
             "%s.%s.check.component.%s",
@@ -172,7 +172,7 @@ int n2a_event_void (int event_type __attribute__ ((__unused__)), void *data)
 int n2a_event_process (int event_type __attribute__ ((__unused__)), void *data)
 {
     struct nebstruct_process_struct *ps = (struct nebstruct_process_struct *) data;
-  
+
     return 0;
 }
 
@@ -198,7 +198,7 @@ int n2a_event_program_status (int event_type __attribute__ ((__unused__)), void 
 int n2a_event_acknowledgement (int event_type __attribute__ ((__unused__)), void *data)
 {
     nebstruct_acknowledgement_data *c = (nebstruct_acknowledgement_data *) data;
-  
+
     if (c->type == NEBTYPE_ACKNOWLEDGEMENT_ADD)
     {
         char buffer[AMQP_MSG_SIZE_MAX];
@@ -222,7 +222,7 @@ int n2a_event_acknowledgement (int event_type __attribute__ ((__unused__)), void
 int n2a_event_downtime (int event_type __attribute__ ((__unused__)), void *data)
 {
     nebstruct_downtime_data *c = (nebstruct_downtime_data *) data;
-  
+
     if (c->type == NEBTYPE_DOWNTIME_START)
     {
         n2a_logger (LG_DEBUG, "Event: event_downtime START");
@@ -248,7 +248,7 @@ int n2a_event_downtime (int event_type __attribute__ ((__unused__)), void *data)
 int n2a_event_comment (int event_type __attribute__ ((__unused__)), void *data)
 {
     nebstruct_comment_data *c = (nebstruct_comment_data *) data;
-  
+
     if (c->type == NEBTYPE_COMMENT_ADD)
     {
         n2a_logger (LG_DEBUG, "Event: event_comment ADD");

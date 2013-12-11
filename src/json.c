@@ -52,11 +52,19 @@ void n2a_nebstruct_service_check_data_update_json (
 }
 
 int n2a_nebstruct_service_check_data_to_json (
-        nebstruct_service_check_data * c,
+        nebstruct_service_check_data *c,
         json_t **pdata,
         size_t *message_size)
 {
     int nbmsg = 1;
+
+    service *service_object = c->object_ptr;
+    objectlist *servicegroups = NULL;
+    servicegroup *servicegroup = NULL;
+
+    host *host_object = service_object->host_ptr;
+    objectlist *hostgroups = NULL;
+    hostgroup *hostgroup = NULL;
 
     json_t *item = NULL;
     json_t *jdata = json_object ();
@@ -139,6 +147,44 @@ int n2a_nebstruct_service_check_data_to_json (
     json_object_set (jdata, "command_name", item);
     json_decref (item);
 
+    /* add hostgroups to event */
+    item = json_array ();
+    json_object_set (jdata, "hostgroups", item);
+
+    hostgroups = host_object->hostgroups_ptr;
+    hostgroup = hostgroups->object_ptr;
+
+    while (hostgroup != NULL)
+    {
+        json_t *groupname = json_string (hostgroup->group_name);
+        json_array_append (item, groupname);
+        json_decref (groupname);
+
+        hostgroups = hostgroups->next;
+        hostgroup = hostgroups->object_ptr;
+    }
+
+    json_decref (item);
+
+    /* add servicegroups to event */
+    item = json_array ();
+    json_object_set (jdata, "servicegroups", item);
+
+    servicegroups = service_object->servicegroups_ptr;
+    servicegroup = servicegroups->object_ptr;
+
+    while (servicegroup != NULL)
+    {
+        json_t *groupname = json_string (servicegroup->group_name);
+        json_array_append (item, groupname);
+        json_decref (groupname);
+
+        servicegroups = servicegroups->next;
+        servicegroup = servicegroups->object_ptr;
+    }
+
+    json_decref (item);
+
     json = json_dumps (jdata, 0);
     *message_size = xstrlen (json);
     xfree (json);
@@ -176,9 +222,11 @@ int n2a_nebstruct_service_check_data_to_json (
     return nbmsg;
 }
 
-int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_data * c)
+int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_data *c)
 {
     host *host_object = c->object_ptr;
+    objectlist *hostgroups = NULL;
+    hostgroup *hostgroup = NULL;
 
     int nbmsg = 0;
     int cstate = (c->state >= 1 ? 2 : c->state);
@@ -257,10 +305,29 @@ int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_d
     json_object_set (jdata, "command_name", item);
     json_decref (item);
 
+    /* add hostgroups to event */
+    item = json_array ();
+    json_object_set (jdata, "hostgroups", item);
+
+    hostgroups = host_object->hostgroups_ptr;
+    hostgroup = hostgroups->object_ptr;
+
+    while (hostgroup != NULL)
+    {
+        json_t *groupname = json_string (hostgroup->group_name);
+        json_array_append (item, groupname);
+        json_decref (groupname);
+
+        hostgroups = hostgroups->next;
+        hostgroup = hostgroups->object_ptr;
+    }
+
+    json_decref (item);
+
     json = json_dumps (jdata, 0);
     ref = xstrlen (json);
 
-    if ((int)ref > g_options.max_size)
+    if ((int) ref > g_options.max_size)
     {
         size_t save = ref - g_options.max_size;
 
