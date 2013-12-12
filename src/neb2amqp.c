@@ -29,6 +29,7 @@
 #include <amqp.h>
 #include <amqp_framing.h>
 #include <amqp_private.h>
+#include <amqp_tcp_socket.h>
 
 #include "neb2amqp.h"
 #include "module.h"
@@ -37,12 +38,10 @@
 
 extern struct options g_options;
 
-static int sockfd;
-
 struct timeval now;
 
 static bool amqp_errors = false;
-static bool first = true;
+/*static bool first = true;*/
 
 static int amqp_last_connect = 0;
 static int amqp_wait_time = 10;
@@ -77,9 +76,8 @@ void n2a_on_error (int x, char const *context)
 {
     if (x < 0)
     {
-        char *errstr = amqp_error_string (-x);
+        const char *errstr = amqp_error_string2 (-x);
         n2a_logger (LG_ERR, "AMQP: %s: %s\n", context, errstr);
-        free (errstr);
 
         amqp_errors = true;
     }
@@ -98,9 +96,8 @@ void n2a_on_amqp_error (amqp_rpc_reply_t x, char const *context)
 
         case AMQP_RESPONSE_LIBRARY_EXCEPTION:
         {
-            char *err = amqp_error_string (x.library_error);
+            const char *err = amqp_error_string2 (x.library_error);
             n2a_logger (LG_ERR, "AMQP: %s: %s\n", context, err);
-            xfree (err);
             break;
         }
 
@@ -149,31 +146,32 @@ void n2a_on_amqp_error (amqp_rpc_reply_t x, char const *context)
 bool n2a_amqp_connect (void)
 {
     amqp_errors = false;
+    amqp_socket_t *socket = NULL;
 
     gettimeofday (&now, NULL);
     amqp_last_connect = (int) now.tv_sec;
+    struct timeval timeout;
+    timeout.tv_sec = 2;
+    timeout.tv_usec = 0;
 
     if (conn)
     {
+        amqp_channel_close(conn, 1, AMQP_REPLY_SUCCESS);
+        amqp_connection_close(conn, AMQP_REPLY_SUCCESS);
         amqp_destroy_connection (conn);
-        amqp_socket_close(sockfd);
     }
-      
+
+    n2a_logger (LG_DEBUG, "AMQP: Init connection");
+    conn = amqp_new_connection ();
+     
+    n2a_logger (LG_DEBUG, "AMQP: Creating socket");
+    socket = amqp_tcp_socket_new(conn);
+ 
     n2a_logger (LG_DEBUG, "AMQP: Opening socket");
-
-    sockfd = amqp_open_socket (g_options.hostname, g_options.port);
-    n2a_on_error (sockfd, "Opening socket");
+    n2a_on_error (amqp_socket_open_noblock (socket, g_options.hostname, g_options.port, &timeout), "Opening socket");
 
     if (!amqp_errors)
     {
-        n2a_logger (LG_DEBUG, "AMQP: Init connection");
-        conn = amqp_new_connection ();
-    }
-    
-    if (!amqp_errors)
-    {
-        amqp_set_sockfd (conn, sockfd);
-
         n2a_logger (LG_DEBUG, "AMQP: Login");
         n2a_on_amqp_error (
             amqp_login (
@@ -331,8 +329,6 @@ void n2a_amqp_disconnect (void)
         conn = NULL;
         amqp_connected = false;
 
-        amqp_socket_close (sockfd);
-      
         n2a_logger (LG_INFO, "AMQP: Successfully disconnected");
     }
     else
