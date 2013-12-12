@@ -74,22 +74,25 @@ int n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *
 
         int nbmsg = n2a_nebstruct_service_check_data_to_json (c, &jdata, &message_size);
 
-        size_t l = 20; /* "..check.ressource.." + \0 = 20 chars */
-
-        l += xstrlen (g_options.connector);
-        l += xstrlen (g_options.eventsource_name);
-        l += xstrlen (c->host_name);
-        l += xstrlen (c->service_description);
-
-        xalloca (key, xmin (g_options.max_size, (int) l) * sizeof (char));
-
-        snprintf (key, xmin (g_options.max_size, (int) l),
-            "%s.%s.check.resource.%s.%s",
+        key = n2a_str_join (".",
             g_options.connector,
             g_options.eventsource_name,
+            "check",
+            "resource",
             c->host_name,
-            c->service_description
+            c->service_description,
+            NULL
         );
+
+        /* if the rk is too big */
+        if (xstrlen (key) > g_options.max_size)
+        {
+            /* truncate it */
+            key[g_options.max_size] = 0;
+
+            /* then free available memory */
+            key = realloc (key, strlen (key) + 1);
+        }
 
         if (nbmsg == 1)
         {
@@ -125,6 +128,8 @@ int n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *
         {
             json_decref (jdata);
         }
+
+        xfree (key);
     }
 
     return 0;
@@ -139,25 +144,31 @@ int n2a_event_host_check (int event_type __attribute__ ((__unused__)), void *dat
         char *buffer = NULL;
         char *key = NULL;
 
-        size_t l = 20;
-
-        l += xstrlen (g_options.connector);
-        l += xstrlen (g_options.eventsource_name);
-        l += xstrlen (c->host_name);
-
         n2a_nebstruct_host_check_data_to_json (&buffer, c);
 
-        xalloca (key, xmin (g_options.max_size, (int) l) * sizeof (char));
-
-        snprintf (key, xmin (g_options.max_size, (int) l),
-            "%s.%s.check.component.%s",
+        key = n2a_str_join (".",
             g_options.connector,
             g_options.eventsource_name,
-            c->host_name
+            "check",
+            "component",
+            c->host_name,
+            NULL
         );
 
+        /* if the rk is too big */
+        if (xstrlen (key) > g_options.max_size)
+        {
+            /* truncate it */
+            key[g_options.max_size] = 0;
+
+            /* then free available memory */
+            key = realloc (key, strlen (key) + 1);
+        }
+
         n2a_send_event (key, buffer);
-        xfree(buffer);
+
+        xfree (buffer);
+        xfree (key);
     }
 
     return 0;
@@ -199,16 +210,44 @@ int n2a_event_acknowledgement (int event_type __attribute__ ((__unused__)), void
 {
     nebstruct_acknowledgement_data *c = (nebstruct_acknowledgement_data *) data;
 
+    n2a_logger (LG_DEBUG, "acktype: %d", c->type);
+
     if (c->type == NEBTYPE_ACKNOWLEDGEMENT_ADD)
     {
-        char buffer[AMQP_MSG_SIZE_MAX];
+        char *buffer = NULL;
+        char *key = NULL;
+
+        if (c->acknowledgement_type == HOST_ACKNOWLEDGEMENT)
+        {
+            key = n2a_str_join (".",
+                g_options.connector,
+                g_options.eventsource_name,
+                "ack",
+                "component",
+                c->host_name,
+                NULL
+            );
+        }
+        else if (c->acknowledgement_type == SERVICE_ACKNOWLEDGEMENT)
+        {
+            key = n2a_str_join (".",
+                g_options.connector,
+                g_options.eventsource_name,
+                "ack",
+                "resource",
+                c->host_name,
+                c->service_description,
+                NULL
+            );
+        }
 
         n2a_logger (LG_DEBUG, "Event: event_acknowledgement ADD");
 
-        /* TODO:
-         * nebstruct_acknowledgement_data_to_json (buffer, c);
-         * n2a_send_event (exchange_name, routingkey, buffer);
-         */
+        n2a_nebstruct_acknolegement_data_to_json (&buffer, c);
+        n2a_send_event (key, buffer);
+
+        xfree (buffer);
+        xfree (key);
     }
     else if (c->type == NEBTYPE_ACKNOWLEDGEMENT_REMOVE)
     {

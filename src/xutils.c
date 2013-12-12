@@ -22,6 +22,7 @@
 // to the Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
 // Boston, MA 02110-1301 USA.
 
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -162,4 +163,70 @@ xstrdup(const char *dup)
     if (copy != NULL)
         strncpy(copy, dup, len + 1);
     return copy;
+}
+
+/*
+ * Copyright (c) 2011 "Capensis" [http://www.capensis.com]
+ *
+ * The following content is part of Canopsis.
+ *
+ * Canopsis is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Canopsis is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with Canopsis.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+char *n2a_str_join (char *delim, ...)
+{
+    va_list args;
+
+    char *ret = NULL;
+    size_t length = 0;
+    size_t delim_len = xstrlen (delim);
+
+    char *p = NULL;
+
+    va_start (args, delim);
+
+    while ((p = va_arg (args, char *)) != NULL)
+    {
+        char *tmp = NULL;
+        size_t len = (ret ? xstrlen (ret) : 0);
+
+        /* calculate new string size */
+        if (len > 0)
+        {
+            length += delim_len;
+        }
+
+        length += xstrlen (p);
+
+        /* reallocate string */
+        if (!(tmp = realloc (ret, length + 1)))
+        {
+            break;
+        }
+
+        ret = tmp;
+
+        if (len > 0)
+        {
+            strcpy (ret + len, delim);
+            len += delim_len;
+        }
+
+        strcpy (ret + len, p);
+    }
+
+    va_end (args);
+
+    return ret;
 }

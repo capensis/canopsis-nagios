@@ -61,9 +61,6 @@ int n2a_nebstruct_service_check_data_to_json (
     service *service_object = c->object_ptr;
     objectlist *servicegroups = NULL;
 
-    host *host_object = service_object->host_ptr;
-    objectlist *hostgroups = NULL;
-
     json_t *item = NULL;
     json_t *jdata = json_object ();
 
@@ -143,24 +140,6 @@ int n2a_nebstruct_service_check_data_to_json (
 
     item = json_string (c->command_name);
     json_object_set (jdata, "command_name", item);
-    json_decref (item);
-
-    /* add hostgroups to event */
-    item = json_array ();
-    json_object_set (jdata, "hostgroups", item);
-
-    for (hostgroups = host_object->hostgroups_ptr;
-         hostgroups != NULL;
-         hostgroups = hostgroups->next
-        )
-    {
-        hostgroup *group = hostgroups->object_ptr;
-
-        json_t *groupname = json_string (group->group_name);
-        json_array_append (item, groupname);
-        json_decref (groupname);
-    }
-
     json_decref (item);
 
     /* add servicegroups to event */
@@ -366,4 +345,115 @@ int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_d
     json_decref (jdata);
 
     return nbmsg;
+}
+
+int n2a_nebstruct_acknolegement_data_to_json (char **buffer, nebstruct_acknowledgement_data *c)
+{
+    json_t *jdata = json_object ();
+    json_t *item = NULL;
+
+    char *s = NULL;
+    size_t l = 0;
+
+    item = json_string (g_options.connector);
+    json_object_set (jdata, "connector", item);
+    json_decref (item);
+
+    item = json_string (g_options.eventsource_name);
+    json_object_set (jdata, "connector_name", item);
+    json_decref (item);
+
+    item = json_string ("ack");
+    json_object_set (jdata, "event_type", item);
+    json_decref (item);
+
+    if (c->acknowledgement_type == HOST_ACKNOWLEDGEMENT)
+    {
+        /* referer RK is the same as this one, but with event type check */
+        s = n2a_str_join (".",
+            g_options.connector,
+            g_options.eventsource_name,
+            "check",
+            "component",
+            c->host_name,
+            NULL
+        );
+
+        item = json_string ("component");
+    }
+    else if (c->acknowledgement_type == SERVICE_ACKNOWLEDGEMENT)
+    {
+        /* referer RK is the same as this one, but with event type check */
+        s = n2a_str_join (".",
+            g_options.connector,
+            g_options.eventsource_name,
+            "check",
+            "resource",
+            c->host_name,
+            c->service_description,
+            NULL
+        );
+
+        item = json_string (c->service_description);
+        json_object_set (jdata, "resource", item);
+        json_decref (item);
+
+        item = json_string ("resource");
+    }
+
+    json_object_set (jdata, "source_type", item);
+    json_decref (item);
+
+    item = json_string (xstrdup (s));
+    json_object_set (jdata, "referer", item);
+    json_object_set (jdata, "ref_rk", item);
+    json_decref (item);
+    xfree (s);
+
+    item = json_string (c->host_name);
+    json_object_set (jdata, "component", item);
+    json_decref (item);
+
+
+    item = json_string (c->author_name);
+    json_object_set (jdata, "author", item);
+    json_decref (item);
+
+    if (xstrlen (c->comment_data) > g_options.max_size)
+    {
+        item = json_string ("");
+
+        n2a_logger (LG_INFO, "Acknowledgement comment too long (host: %s)", c->host_name);
+    }
+    else
+    {
+        item = json_string (c->comment_data);
+    }
+
+    json_object_set (jdata, "output", item);
+    json_decref (item);
+
+    item = json_integer (c->state);
+    json_object_set (jdata, "state", item);
+    json_decref (item);
+
+    item = json_integer (1);
+    json_object_set (jdata, "state_type", item);
+    json_decref (item);
+
+    item = json_integer (c->timestamp.tv_sec);
+    json_object_set (jdata, "timestamp", item);
+    json_decref (item);
+
+    /* generate string */
+    s = json_dumps (jdata, 0);
+    l = xstrlen (s);
+
+    /* write to buffer */
+    *buffer = xmalloc (l + 1);
+    snprintf (*buffer, l + 1, "%s", s);
+    xfree (s);
+
+    json_decref (jdata);
+    return 1;
 }

@@ -380,7 +380,7 @@ int n2a_send_event (const char *routingkey, const char *message)
 {
     int amqp_state = n2a_amqp_check ();
 
-    n2a_fifo_check();
+    n2a_fifo_check ();
 
     if (amqp_state && g_options.pFifo->size == 0)
     {

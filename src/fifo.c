@@ -178,7 +178,7 @@ int n2a_clear (fifo *pFifo)
 
 void n2a_check_size (fifo *pFifo)
 {
-    if (pFifo->size >= pFifo->max_size && ! pFifo->full)
+    if (pFifo->size >= pFifo->max_size && !pFifo->full)
     {
         pFifo->full = true;
         n2a_logger (LG_WARN, "FIFO: Queue is full, drop events ...");
