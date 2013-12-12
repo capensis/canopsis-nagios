@@ -53,6 +53,7 @@ struct options
 	char *password;
 	char *virtual_host;
 	char *exchange_name;
+	char *exchange_type;
 	char *connector;
 	char *eventsource_name;
 	fifo *pFifo;

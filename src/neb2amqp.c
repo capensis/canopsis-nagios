@@ -193,6 +193,13 @@ bool n2a_amqp_connect (void)
         n2a_on_amqp_error (amqp_get_rpc_reply (conn), "Opening channel");
     }
 
+    if (!amqp_errors && NULL != g_options.exchange_type)
+    {
+        n2a_logger (LG_DEBUG, "AMQP: setting exchange type");
+        amqp_exchange_declare(conn, 1, amqp_cstring_bytes(g_options.exchange_name), amqp_cstring_bytes(g_options.exchange_type), 0, 0, amqp_empty_table);
+        n2a_on_amqp_error (amqp_get_rpc_reply(conn), "Declaring exchange");
+    }
+
     if (!amqp_errors)
     {
         n2a_logger (LG_INFO, "AMQP: Successfully connected");

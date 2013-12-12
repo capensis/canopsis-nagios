@@ -52,6 +52,7 @@ int nebmodule_init (
     g_options.password = "guest";
     g_options.virtual_host = "canopsis";
     g_options.exchange_name = "canopsis.events";
+    g_options.exchange_type = NULL;
     g_options.log_level = 0;
     g_options.connector = "nagios";
     g_options.max_size = 8192;
@@ -257,6 +258,11 @@ n2a_parse_arguments (const char *args_orig)
 	    {
 	      g_options.exchange_name = right;
 	      n2a_logger (LG_DEBUG, "Setting exchange_name to %s", g_options.exchange_name);
+	    }
+	  else if (strcmp (left, "exchange_type") == 0)
+	    {
+	      g_options.exchange_type = right;
+	      n2a_logger (LG_DEBUG, "Setting exchange_type to %s", g_options.exchange_type);
 	    }
 	  else if (strcmp (left, "connector") == 0)
 	    {
