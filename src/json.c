@@ -457,3 +457,100 @@ int n2a_nebstruct_acknolegement_data_to_json (char **buffer, nebstruct_acknowled
     json_decref (jdata);
     return 1;
 }
+
+int n2a_nebstruct_downtime_data_to_json (char **buffer, nebstruct_downtime_data *c)
+{
+    json_t *jdata = json_object ();
+    json_t *item = NULL;
+
+    char *s = NULL;
+    size_t l = 0;
+
+    item = json_integer (c->timestamp.tv_sec);
+    json_object_set (jdata, "timestamp", item);
+    json_decref (item);
+
+    item = json_string (g_options.connector);
+    json_object_set (jdata, "connector", item);
+    json_decref (item);
+
+    item = json_string (g_options.eventsource_name);
+    json_object_set (jdata, "connector_name", item);
+    json_decref (item);
+
+    item = json_string ("downtime");
+    json_object_set (jdata, "event_type", item);
+    json_decref (item);
+
+    if (c->downtime_type == HOST_DOWNTIME)
+    {
+        item = json_string ("component");
+    }
+    else if (c->downtime_type == SERVICE_DOWNTIME)
+    {
+        item = json_string (c->service_description);
+        json_object_set (jdata, "resource", item);
+        json_decref (item);
+
+        item = json_string ("resource");
+    }
+
+    json_object_set (jdata, "source_type", item);
+    json_decref (item);
+
+    item = json_string (c->host_name);
+    json_object_set (jdata, "component", item);
+    json_decref (item);
+
+    item = json_string (c->author_name);
+    json_object_set (jdata, "author", item);
+    json_decref (item);
+
+    if (xstrlen (c->comment_data) > g_options.max_size)
+    {
+        item = json_string ("");
+
+        n2a_logger (LG_INFO, "Downtime comment too long (host: %s)", c->host_name);
+    }
+    else
+    {
+        item = json_string (c->comment_data);
+    }
+
+    json_object_set (jdata, "output", item);
+    json_decref (item);
+
+    item = json_integer (c->start_time);
+    json_object_set (jdata, "start", item);
+    json_decref (item);
+
+    item = json_integer (c->end_time);
+    json_object_set (jdata, "end", item);
+    json_decref (item);
+
+    item = json_integer (c->duration);
+    json_object_set (jdata, "duration", item);
+    json_decref (item);
+
+    item = json_integer (c->entry_time);
+    json_object_set (jdata, "entry", item);
+    json_decref (item);
+
+    item = (c->fixed ? json_true () : json_false ());
+    json_object_set (jdata, "fixed", item);
+    json_decref (item);
+
+    /* generate string */
+    s = json_dumps (jdata, 0);
+    l = xstrlen (s);
+
+    /* write to buffer */
+    *buffer = xmalloc (l + 1);
+    snprintf (*buffer, l + 1, "%s", s);
+    xfree (s);
+
+    json_decref (jdata);
+
+    return 1;
+}
+

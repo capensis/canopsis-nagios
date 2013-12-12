@@ -217,6 +217,8 @@ int n2a_event_acknowledgement (int event_type __attribute__ ((__unused__)), void
         char *buffer = NULL;
         char *key = NULL;
 
+        n2a_logger (LG_DEBUG, "Event: event_acknowledgement ADD");
+
         if (c->acknowledgement_type == HOST_ACKNOWLEDGEMENT)
         {
             key = n2a_str_join (".",
@@ -241,7 +243,15 @@ int n2a_event_acknowledgement (int event_type __attribute__ ((__unused__)), void
             );
         }
 
-        n2a_logger (LG_DEBUG, "Event: event_acknowledgement ADD");
+        /* if the rk is too big */
+        if (xstrlen (key) > g_options.max_size)
+        {
+            /* truncate it */
+            key[g_options.max_size] = 0;
+
+            /* then free available memory */
+            key = realloc (key, strlen (key) + 1);
+        }
 
         n2a_nebstruct_acknolegement_data_to_json (&buffer, c);
         n2a_send_event (key, buffer);
@@ -270,10 +280,52 @@ int n2a_event_downtime (int event_type __attribute__ ((__unused__)), void *data)
     {
         n2a_logger (LG_DEBUG, "Event: event_downtime STOP");
     }
-
-    if (c->type == NEBTYPE_DOWNTIME_START || c->type == NEBTYPE_DOWNTIME_STOP)
+    else if (c->type == NEBTYPE_DOWNTIME_ADD)
     {
-        char buffer[AMQP_MSG_SIZE_MAX];
+        char *buffer = NULL;
+        char *key = NULL;
+
+        n2a_logger (LG_DEBUG, "Event: event_downtime ADD");
+
+        if (c->downtime_type == HOST_DOWNTIME)
+        {
+            key = n2a_str_join (".",
+                g_options.connector,
+                g_options.eventsource_name,
+                "downtime",
+                "component",
+                c->host_name,
+                NULL
+            );
+        }
+        else if (c->downtime_type == SERVICE_DOWNTIME)
+        {
+            key = n2a_str_join (".",
+                g_options.connector,
+                g_options.eventsource_name,
+                "downtime",
+                "resource",
+                c->host_name,
+                c->service_description,
+                NULL
+            );
+        }
+
+        /* if the rk is too big */
+        if (xstrlen (key) > g_options.max_size)
+        {
+            /* truncate it */
+            key[g_options.max_size] = 0;
+
+            /* then free available memory */
+            key = realloc (key, strlen (key) + 1);
+        }
+
+        n2a_nebstruct_downtime_data_to_json (&buffer, c);
+        n2a_send_event (key, buffer);
+
+        xfree (buffer);
+        xfree (key);
 
         /* TODO:
          * nebstruct_downtime_data_to_json (buffer, c);
@@ -309,3 +361,5 @@ int n2a_event_comment (int event_type __attribute__ ((__unused__)), void *data)
 
     return 0;
 }
+
+
