@@ -60,7 +60,6 @@ int n2a_nebstruct_service_check_data_to_json (
 
     service *service_object = c->object_ptr;
     objectlist *servicegroups = NULL;
-    customvariablesmember *cvar = NULL;
 
     json_t *item = NULL;
     json_t *jdata = json_object ();
@@ -144,29 +143,37 @@ int n2a_nebstruct_service_check_data_to_json (
     json_decref (item);
 
     /* add servicegroups to event */
-    item = json_array ();
-    json_object_set (jdata, "servicegroups", item);
-
-    for (servicegroups = service_object->servicegroups_ptr;
-         servicegroups != NULL;
-         servicegroups = servicegroups->next
-        )
+    if (g_options.servicegroups)
     {
-        servicegroup *group = servicegroups->object_ptr;
+        item = json_array ();
+        json_object_set (jdata, "servicegroups", item);
 
-        json_t *groupname = json_string (group->group_name);
-        json_array_append (item, groupname);
-        json_decref (groupname);
+        for (servicegroups = service_object->servicegroups_ptr;
+             servicegroups != NULL;
+             servicegroups = servicegroups->next
+            )
+        {
+            servicegroup *group = servicegroups->object_ptr;
+
+            json_t *groupname = json_string (group->group_name);
+            json_array_append (item, groupname);
+            json_decref (groupname);
+        }
+
+        json_decref (item);
     }
 
-    json_decref (item);
-
     /* now, add custom variables to event */
-    for (cvar = service_object->custom_variables; cvar != NULL; cvar = cvar->next)
+    if (g_options.custom_variables)
     {
-        item = json_string (cvar->variable_value);
-        json_object_set (jdata, cvar->variable_name, item);
-        json_decref (item);
+        customvariablesmember *cvar = NULL;
+
+        for (cvar = service_object->custom_variables; cvar != NULL; cvar = cvar->next)
+        {
+            item = json_string (cvar->variable_value);
+            json_object_set (jdata, cvar->variable_name, item);
+            json_decref (item);
+        }
     }
 
     /* now stringify JSON */
@@ -212,7 +219,6 @@ int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_d
 {
     host *host_object = c->object_ptr;
     objectlist *hostgroups = NULL;
-    customvariablesmember *cvar = NULL;
 
     int nbmsg = 0;
     int cstate = (c->state >= 1 ? 2 : c->state);
@@ -292,29 +298,37 @@ int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_d
     json_decref (item);
 
     /* add hostgroups to event */
-    item = json_array ();
-    json_object_set (jdata, "hostgroups", item);
-
-    for (hostgroups = host_object->hostgroups_ptr;
-         hostgroups != NULL;
-         hostgroups = hostgroups->next
-        )
+    if (g_options.hostgroups)
     {
-        hostgroup *group = hostgroups->object_ptr;
+        item = json_array ();
+        json_object_set (jdata, "hostgroups", item);
 
-        json_t *groupname = json_string (group->group_name);
-        json_array_append (item, groupname);
-        json_decref (groupname);
+        for (hostgroups = host_object->hostgroups_ptr;
+             hostgroups != NULL;
+             hostgroups = hostgroups->next
+            )
+        {
+            hostgroup *group = hostgroups->object_ptr;
+
+            json_t *groupname = json_string (group->group_name);
+            json_array_append (item, groupname);
+            json_decref (groupname);
+        }
+
+        json_decref (item);
     }
 
-    json_decref (item);
-
     /* now, add custom variables to event */
-    for (cvar = host_object->custom_variables; cvar != NULL; cvar = cvar->next)
+    if (g_options.custom_variables)
     {
-        item = json_string (cvar->variable_value);
-        json_object_set (jdata, cvar->variable_name, item);
-        json_decref (item);
+        customvariablesmember *cvar = NULL;
+
+        for (cvar = host_object->custom_variables; cvar != NULL; cvar = cvar->next)
+        {
+            item = json_string (cvar->variable_value);
+            json_object_set (jdata, cvar->variable_name, item);
+            json_decref (item);
+        }
     }
 
     /* now stringify JSON */

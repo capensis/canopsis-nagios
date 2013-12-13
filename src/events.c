@@ -218,6 +218,7 @@ int n2a_event_acknowledgement (int event_type __attribute__ ((__unused__)), void
         char *key = NULL;
 
         n2a_logger (LG_DEBUG, "Event: event_acknowledgement ADD");
+        printf ("ACK STATE: %d\n", c->state);
 
         if (c->acknowledgement_type == HOST_ACKNOWLEDGEMENT)
         {
@@ -326,11 +327,6 @@ int n2a_event_downtime (int event_type __attribute__ ((__unused__)), void *data)
 
         xfree (buffer);
         xfree (key);
-
-        /* TODO:
-         * nebstruct_downtime_data_to_json (buffer, c);
-         * n2a_send_event (exchange_name, routingkey, buffer);
-         */
     }
 
   return 0;

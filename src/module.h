@@ -58,6 +58,12 @@ struct options
 	char *eventsource_name;
 	fifo *pFifo;
 
+    int hostgroups;
+    int servicegroups;
+    int acknowledgement;
+    int downtime;
+    int custom_variables;
+
 	int log_level;
 	
 	nebmodule *nagios_handle;

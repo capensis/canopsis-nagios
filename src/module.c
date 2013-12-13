@@ -66,6 +66,12 @@ int nebmodule_init (
     g_options.cache_file = "/tmp/neb2amqp.cache";
     g_options.pFifo = NULL;
 
+    g_options.acknowledgement = FALSE;
+    g_options.downtime = FALSE;
+    g_options.hostgroups = FALSE;
+    g_options.servicegroups = FALSE;
+    g_options.custom_variables = FALSE;
+
     /* Parse module options */
     n2a_parse_arguments (args);
 
@@ -111,191 +117,276 @@ int nebmodule_deinit (
 /* This code is part of Check_MK (GPL v2).
  * The official homepage is at http://mathias-kettner.de/check_mk
  */
-static void
-n2a_parse_arguments (const char *args_orig)
+static void n2a_parse_arguments (const char *args_orig)
 {
+    char *save = NULL;
+    char *token = NULL;
 
-  if (!args_orig)
-    return;			// no arguments, use default options
-
-  g_args = xstrdup (args_orig);
-  char *save = g_args;
-  char *token;
-  while (0 != (token = n2a_next_field (&g_args)))
+    if (!args_orig)
     {
-      /* find = */
-      char *part = token;
-      char *left = n2a_next_token (&part, '=');
-      char *right = n2a_next_token (&part, 0);
-      if (right == NULL)
-	{
-	  char *subpart = left;
-	  char *subleft = n2a_next_token (&subpart, ':');
-	  char *subright = n2a_next_token (&subpart, 0);
-	  if (subright == NULL)
-	    {
-	      g_options.hostname = subleft;
-	    }
-	  else
-	    {
-	      g_options.hostname = subright;
-	      g_options.port = strtol (subleft, NULL, 10);
-	      n2a_logger (LG_DEBUG, "Setting port number to %d", g_options.port);
-	    }
-	  n2a_logger (LG_DEBUG, "Setting hostname to %s", g_options.hostname);
-	}
-      else
-	{
-	  if (strcmp (left, "debug") == 0)
-	    {
-	      g_options.log_level = strtol (right, NULL, 10);
-	      n2a_logger (LG_DEBUG, "Setting debug level to %d", g_options.log_level);
-	    }
-      else if (strcmp(left, "purge") == 0)
-        {
-          if (strncasecmp(right,"y", 1) == 0 || strncasecmp(right,"t", 1) == 0)
-              g_options.purge = TRUE;
-          else if (strncasecmp(right,"f", 1) == 0 || strncasecmp(right,"n", 1) == 0)
-              g_options.purge = FALSE;
-          else {
-              char *sav;
-              int r = strtol (right, &sav, 10);
-              if (right == sav)
-                  g_options.purge = FALSE;
-              else {
-                  switch (r) {
-                      case 1:
-                        g_options.purge = TRUE;
-                        break;
-                      case 0:
-                      default:
-                        g_options.purge = FALSE;
-                        break;
-                  }
-              }
-          }
-          n2a_logger (LG_DEBUG, "Setting purge to '%s'",
-              g_options.purge ? "true": "false");
-        }
-      else if (strcmp (left, "rate") == 0)
-        {
-          int r = strtol (right, NULL, 10);
-          if (r > 0) {
-              g_options.rate = r * 1000;
-              n2a_logger (LG_DEBUG, "Setting rate to %dms", r);
-          } else {
-              n2a_logger (LG_DEBUG, "Wrong value for option 'rate', leave it to %dms",
-                g_options.rate/1000);
-          }
-        }
-      else if (strcmp (left, "flush") == 0)
-        {
-          int r = strtol (right, NULL, 10);
-          if (r > 0 || r == -1) {
-              g_options.flush = r;
-              n2a_logger (LG_DEBUG, "Setting flush to %d messages", r);
-          } else {
-              n2a_logger (LG_DEBUG, "Wrong value for option 'flush', leave it to %d messages",
-                g_options.flush);
-          }
-        }
-      else if (strcmp(left, "max_size") == 0)
-        {
-          g_options.max_size = strtol(right, NULL, 10);
-          n2a_logger (LG_DEBUG, "Setting max_size buffer to %d bits",
-              g_options.max_size);
-        }
-      else if (strcmp (left, "autoflush") == 0)
-        {
-          g_options.autoflush = strtol (right, NULL, 10);
-          n2a_logger (LG_DEBUG, "Setting autoflush to %ds", g_options.autoflush);
-        }
-      else if (strcmp (left, "flush_interval") == 0)
-        {
-          g_options.flush_interval = strtol (right, NULL, 10);
-          n2a_logger (LG_DEBUG, "Setting flush_interval to %ds", g_options.autoflush);
-        }
-      else if (strcmp(left, "cache_size") == 0)
-        {
-          g_options.cache_size = strtol(right, NULL, 10);
-          n2a_logger (LG_DEBUG, "Setting cache_size to %d",
-              g_options.cache_size);
-        }
-      else if (strcmp(left, "cache_file") == 0)
-        {
-          g_options.cache_file = right;
-          n2a_logger (LG_DEBUG, "Setting cache_file to '%s'",
-              g_options.cache_file);
-        }
-      else if (strcmp(left, "autosync") == 0)
-        {
-          g_options.autosync = strtol(right, NULL, 10);
-          n2a_logger (LG_DEBUG, "Setting autosync to %ds",
-              g_options.autosync);
-        }
-	  else if (strcmp (left, "name") == 0)
-	    {
-	      g_options.eventsource_name = right;
-	      n2a_logger (LG_DEBUG, "Setting g_eventsource_name to %s",
-		      g_options.eventsource_name);
-	    }
-	  else if (strcmp (left, "userid") == 0)
-	    {
-	      g_options.userid = right;
-	      n2a_logger (LG_DEBUG, "Setting userid to %s", g_options.userid);
-	    }
-	  else if (strcmp (left, "password") == 0)
-	    {
-	      g_options.password = right;
-	      n2a_logger (LG_DEBUG, "Setting password to %s", g_options.password);
-	    }
-	  else if (strcmp (left, "virtual_host") == 0)
-	    {
-	      g_options.virtual_host = right;
-	      n2a_logger (LG_DEBUG, "Setting virtual_host to %s", g_options.virtual_host);
-	    }
-	  else if (strcmp (left, "exchange_name") == 0)
-	    {
-	      g_options.exchange_name = right;
-	      n2a_logger (LG_DEBUG, "Setting exchange_name to %s", g_options.exchange_name);
-	    }
-	  else if (strcmp (left, "exchange_type") == 0)
-	    {
-	      g_options.exchange_type = right;
-	      n2a_logger (LG_DEBUG, "Setting exchange_type to %s", g_options.exchange_type);
-	    }
-	  else if (strcmp (left, "connector") == 0)
-	    {
-	      g_options.connector = right;
-	      n2a_logger (LG_DEBUG, "Setting connector to %s", g_options.connector);
-	    }
-	  else if (strcmp (left, "port") == 0)
-	    {
-	      g_options.port = strtol (right, NULL, 10);
-	      n2a_logger (LG_DEBUG, "Setting port to %d", g_options.port);
-	    }
-	  else if (strcmp (left, "host") == 0)
-	    {
-	      char *subpart = right;
-	      char *subleft = n2a_next_token (&subpart, ':');
-	      char *subright = n2a_next_token (&subpart, 0);
-	      if (subright == NULL)
-		{
-		  g_options.hostname = subleft;
-		}
-	      else
-		{
-		  g_options.hostname = subright;
-		  g_options.port = strtol (subleft, NULL, 10);
-		  n2a_logger (LG_DEBUG, "Setting port number to %d", g_options.port);
-		}
-	      n2a_logger (LG_DEBUG, "Setting hostname to %s", g_options.hostname);
-	    }
-	  else
-	    {
-	      n2a_logger (LG_ERR, "Ignoring invalid option %s=%s", left, right);
-	    }
-	}
+        /* no arguments, use default options */
+        return;
     }
+
+    g_args = xstrdup (args_orig);
+    save = g_args;
+
+    while (0 != (token = n2a_next_field (&g_args)))
+    {
+        /* find = */
+        char *part = token;
+        char *left = n2a_next_token (&part, '=');
+        char *right = n2a_next_token (&part, 0);
+
+        if (right == NULL)
+        {
+            char *subpart = left;
+            char *subleft = n2a_next_token (&subpart, ':');
+            char *subright = n2a_next_token (&subpart, 0);
+
+            if (subright == NULL)
+            {
+                g_options.hostname = subleft;
+            }
+            else
+            {
+                g_options.hostname = subright;
+                g_options.port = strtol (subleft, NULL, 10);
+
+                n2a_logger (LG_DEBUG, "Setting port number to %d", g_options.port);
+            }
+
+            n2a_logger (LG_DEBUG, "Setting hostname to %s", g_options.hostname);
+        }
+        else
+        {
+            if (strcmp (left, "debug") == 0)
+            {
+                g_options.log_level = strtol (right, NULL, 10);
+
+                n2a_logger (LG_DEBUG, "Setting debug level to %d", g_options.log_level);
+            }
+            else if (strcmp (left, "purge") == 0)
+            {
+                if (strncasecmp (right, "y", 1) == 0 || strncasecmp (right, "t", 1) == 0)
+                {
+                    g_options.purge = TRUE;
+                }
+                else if (strncasecmp (right, "f", 1) == 0 || strncasecmp (right, "n", 1) == 0)
+                {
+                    g_options.purge = FALSE;
+                }
+                else
+                {
+                    char *sav;
+                    int r = strtol (right, &sav, 10);
+
+                    if (right == sav)
+                    {
+                        g_options.purge = FALSE;
+                    }
+                    else
+                    {
+                        switch (r)
+                        {
+                            case 1:
+                                g_options.purge = TRUE;
+                                break;
+
+                            case 0:
+                            default:
+                                g_options.purge = FALSE;
+                                break;
+                        }
+                    }
+                }
+
+                n2a_logger (LG_DEBUG, "Setting purge to '%s'", g_options.purge ? "true": "false");
+            }
+            else if (strcmp (left, "rate") == 0)
+            {
+                int r = strtol (right, NULL, 10);
+
+                if (r > 0)
+                {
+                    g_options.rate = r * 1000;
+
+                    n2a_logger (LG_DEBUG, "Setting rate to %dms", r);
+                }
+                else
+                {
+                    n2a_logger (LG_DEBUG, "Wrong value for option 'rate', leave it to %dms",
+                        g_options.rate / 1000
+                    );
+                }
+            }
+            else if (strcmp (left, "flush") == 0)
+            {
+                int r = strtol (right, NULL, 10);
+
+                if (r > 0 || r == -1)
+                {
+                    g_options.flush = r;
+
+                    n2a_logger (LG_DEBUG, "Setting flush to %d messages", r);
+                }
+                else
+                {
+                    n2a_logger (LG_DEBUG, "Wrong value for option 'flush', leave it to %d messages",
+                        g_options.flush
+                    );
+                }
+            }
+            else if (strcmp (left, "max_size") == 0)
+            {
+                g_options.max_size = strtol (right, NULL, 10);
+
+                n2a_logger (LG_DEBUG, "Setting max_size buffer to %d bits",
+                    g_options.max_size
+                );
+            }
+            else if (strcmp (left, "autoflush") == 0)
+            {
+                g_options.autoflush = strtol (right, NULL, 10);
+
+                n2a_logger (LG_DEBUG, "Setting autoflush to %ds", g_options.autoflush);
+            }
+            else if (strcmp (left, "flush_interval") == 0)
+            {
+                g_options.flush_interval = strtol (right, NULL, 10);
+
+                n2a_logger (LG_DEBUG, "Setting flush_interval to %ds", g_options.autoflush);
+            }
+            else if (strcmp (left, "cache_size") == 0)
+            {
+                g_options.cache_size = strtol (right, NULL, 10);
+
+                n2a_logger (LG_DEBUG, "Setting cache_size to %d",
+                    g_options.cache_size
+                );
+            }
+            else if (strcmp (left, "cache_file") == 0)
+            {
+                g_options.cache_file = right;
+
+                n2a_logger (LG_DEBUG, "Setting cache_file to '%s'",
+                    g_options.cache_file
+                );
+            }
+            else if (strcmp (left, "autosync") == 0)
+            {
+                g_options.autosync = strtol (right, NULL, 10);
+
+                n2a_logger (LG_DEBUG, "Setting autosync to %ds",
+                    g_options.autosync
+                );
+            }
+            else if (strcmp (left, "name") == 0)
+            {
+                g_options.eventsource_name = right;
+
+                n2a_logger (LG_DEBUG, "Setting g_eventsource_name to %s",
+                    g_options.eventsource_name
+                );
+            }
+            else if (strcmp (left, "userid") == 0)
+            {
+                g_options.userid = right;
+
+                n2a_logger (LG_DEBUG, "Setting userid to %s", g_options.userid);
+            }
+            else if (strcmp (left, "password") == 0)
+            {
+                g_options.password = right;
+
+                n2a_logger (LG_DEBUG, "Setting password to %s", g_options.password);
+            }
+            else if (strcmp (left, "virtual_host") == 0)
+            {
+                g_options.virtual_host = right;
+
+                n2a_logger (LG_DEBUG, "Setting virtual_host to %s", g_options.virtual_host);
+            }
+            else if (strcmp (left, "exchange_name") == 0)
+            {
+                g_options.exchange_name = right;
+
+                n2a_logger (LG_DEBUG, "Setting exchange_name to %s", g_options.exchange_name);
+            }
+            else if (strcmp (left, "exchange_type") == 0)
+            {
+                g_options.exchange_type = right;
+
+                n2a_logger (LG_DEBUG, "Setting exchange_type to %s", g_options.exchange_type);
+            }
+            else if (strcmp (left, "connector") == 0)
+            {
+                g_options.connector = right;
+
+                n2a_logger (LG_DEBUG, "Setting connector to %s", g_options.connector);
+            }
+            else if (strcmp (left, "port") == 0)
+            {
+                g_options.port = strtol (right, NULL, 10);
+
+                n2a_logger (LG_DEBUG, "Setting port to %d", g_options.port);
+            }
+            else if (strcmp (left, "host") == 0)
+            {
+                char *subpart = right;
+                char *subleft = n2a_next_token (&subpart, ':');
+                char *subright = n2a_next_token (&subpart, 0);
+
+                if (subright == NULL)
+                {
+                    g_options.hostname = subleft;
+                }
+                else
+                {
+                    g_options.hostname = subright;
+                    g_options.port = strtol (subleft, NULL, 10);
+
+                    n2a_logger (LG_DEBUG, "Setting port number to %d", g_options.port);
+                }
+
+                n2a_logger (LG_DEBUG, "Setting hostname to %s", g_options.hostname);
+            }
+            else if (strcmp (left, "hostgroups") == 0)
+            {
+                g_options.hostgroups = strtol (right, NULL, 2);
+
+                n2a_logger (LG_ERR, "Setting hostgroups to '%s'", g_options.hostgroups ? "true": "false");
+            }
+            else if (strcmp (left, "servicegroups") == 0)
+            {
+                g_options.servicegroups = strtol (right, NULL, 2);
+
+                n2a_logger (LG_ERR, "Setting servicegroups to '%s'", g_options.servicegroups ? "true": "false");
+            }
+            else if (strcmp (left, "acknowledgement") == 0)
+            {
+                g_options.acknowledgement = strtol (right, NULL, 2);
+
+                n2a_logger (LG_ERR, "Setting acknowledgement to '%s'", g_options.acknowledgement ? "true": "false");
+            }
+            else if (strcmp (left, "downtime") == 0)
+            {
+                g_options.downtime = strtol (right, NULL, 2);
+
+                n2a_logger (LG_ERR, "Setting downtime to '%s'", g_options.downtime ? "true": "false");
+            }
+            else if (strcmp (left, "custom_variables") == 0)
+            {
+                g_options.custom_variables = strtol (right, NULL, 2);
+
+                n2a_logger (LG_ERR, "Setting custom_variables to '%s'", g_options.custom_variables ? "true": "false");
+            }
+            else
+            {
+                n2a_logger (LG_ERR, "Ignoring invalid option %s=%s", left, right);
+            }
+        }
+    }
+
     g_args = save;
 }

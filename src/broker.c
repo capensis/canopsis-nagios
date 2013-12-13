@@ -157,8 +157,15 @@ void n2a_register_callbacks (void)
     neb_register_callback (NEBCALLBACK_SERVICE_CHECK_DATA,   g_options.nagios_handle, 0, n2a_event_service_check);
     neb_register_callback (NEBCALLBACK_HOST_CHECK_DATA,      g_options.nagios_handle, 0, n2a_event_host_check);
 
-    neb_register_callback (NEBCALLBACK_ACKNOWLEDGEMENT_DATA, g_options.nagios_handle, 0, n2a_event_acknowledgement);
-    neb_register_callback (NEBCALLBACK_DOWNTIME_DATA,        g_options.nagios_handle, 0, n2a_event_downtime);
+    if (g_options.acknowledgement)
+    {
+        neb_register_callback (NEBCALLBACK_ACKNOWLEDGEMENT_DATA, g_options.nagios_handle, 0, n2a_event_acknowledgement);
+    }
+
+    if (g_options.downtime)
+    {
+        neb_register_callback (NEBCALLBACK_DOWNTIME_DATA,        g_options.nagios_handle, 0, n2a_event_downtime);
+    }
 
 /*
     neb_register_callback (NEBCALLBACK_COMMENT_DATA,         g_options.nagios_handle, 0, n2a_event_comment);
@@ -176,8 +183,15 @@ void n2a_deregister_callbacks (void)
     neb_deregister_callback (NEBCALLBACK_SERVICE_CHECK_DATA,   n2a_event_service_check);
     neb_deregister_callback (NEBCALLBACK_HOST_CHECK_DATA,      n2a_event_host_check);
 
-    neb_deregister_callback (NEBCALLBACK_ACKNOWLEDGEMENT_DATA, n2a_event_acknowledgement);
-    neb_deregister_callback (NEBCALLBACK_DOWNTIME_DATA,        n2a_event_downtime);
+    if (g_options.acknowledgement)
+    {
+        neb_deregister_callback (NEBCALLBACK_ACKNOWLEDGEMENT_DATA, n2a_event_acknowledgement);
+    }
+
+    if (g_options.downtime)
+    {
+        neb_deregister_callback (NEBCALLBACK_DOWNTIME_DATA,        n2a_event_downtime);
+    }
 
 /*
     neb_deregister_callback (NEBCALLBACK_COMMENT_DATA,         n2a_event_comment);
