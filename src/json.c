@@ -164,7 +164,6 @@ int n2a_nebstruct_service_check_data_to_json (
     /* now, add custom variables to event */
     for (cvar = service_object->custom_variables; cvar != NULL; cvar = cvar->next)
     {
-        printf("SRV: %s = '%s'\n", cvar->variable_name, cvar->variable_value);
         item = json_string (cvar->variable_value);
         json_object_set (jdata, cvar->variable_name, item);
         json_decref (item);
