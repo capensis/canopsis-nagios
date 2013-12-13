@@ -60,6 +60,7 @@ int n2a_nebstruct_service_check_data_to_json (
 
     service *service_object = c->object_ptr;
     objectlist *servicegroups = NULL;
+    customvariablesmember *cvar = NULL;
 
     json_t *item = NULL;
     json_t *jdata = json_object ();
@@ -160,6 +161,15 @@ int n2a_nebstruct_service_check_data_to_json (
 
     json_decref (item);
 
+    /* now, add custom variables to event */
+    for (cvar = service_object->custom_variables; cvar != NULL; cvar = cvar->next)
+    {
+        printf("SRV: %s = '%s'\n", cvar->variable_name, cvar->variable_value);
+        item = json_string (cvar->variable_value);
+        json_object_set (jdata, cvar->variable_name, item);
+        json_decref (item);
+    }
+
     /* now stringify JSON */
 
     json = json_dumps (jdata, 0);
@@ -203,6 +213,7 @@ int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_d
 {
     host *host_object = c->object_ptr;
     objectlist *hostgroups = NULL;
+    customvariablesmember *cvar = NULL;
 
     int nbmsg = 0;
     int cstate = (c->state >= 1 ? 2 : c->state);
@@ -298,6 +309,14 @@ int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_d
     }
 
     json_decref (item);
+
+    /* now, add custom variables to event */
+    for (cvar = host_object->custom_variables; cvar != NULL; cvar = cvar->next)
+    {
+        item = json_string (cvar->variable_value);
+        json_object_set (jdata, cvar->variable_name, item);
+        json_decref (item);
+    }
 
     /* now stringify JSON */
 
