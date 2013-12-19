@@ -63,9 +63,10 @@ struct options
     int acknowledgement;
     int downtime;
     int custom_variables;
+	int ssl;
 
 	int log_level;
-	
+
 	nebmodule *nagios_handle;
 };
 

@@ -71,6 +71,7 @@ int nebmodule_init (
     g_options.hostgroups = FALSE;
     g_options.servicegroups = FALSE;
     g_options.custom_variables = FALSE;
+    g_options.ssl = FALSE;
 
     /* Parse module options */
     n2a_parse_arguments (args);
@@ -362,6 +363,12 @@ static void n2a_parse_arguments (const char *args_orig)
                 g_options.servicegroups = strtol (right, NULL, 2);
 
                 n2a_logger (LG_ERR, "Setting servicegroups to '%s'", g_options.servicegroups ? "true": "false");
+            }
+            else if (strcmp (left, "ssl") == 0)
+            {
+                g_options.ssl = strtol (right, NULL, 2);
+
+                n2a_logger (LG_ERR, "Setting ssl to '%s'", g_options.ssl ? "true": "false");
             }
             else if (strcmp (left, "acknowledgement") == 0)
             {

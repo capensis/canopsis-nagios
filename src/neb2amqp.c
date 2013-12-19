@@ -30,6 +30,7 @@
 #include <amqp_framing.h>
 #include <amqp_private.h>
 #include <amqp_tcp_socket.h>
+#include <amqp_ssl_socket.h>
 
 #include "neb2amqp.h"
 #include "module.h"
@@ -165,7 +166,10 @@ bool n2a_amqp_connect (void)
     conn = amqp_new_connection ();
      
     n2a_logger (LG_DEBUG, "AMQP: Creating socket");
-    socket = amqp_tcp_socket_new(conn);
+    if (!g_options.ssl)
+        socket = amqp_tcp_socket_new(conn);
+    else
+        socket = amqp_ssl_socket_new(conn);
  
     n2a_logger (LG_DEBUG, "AMQP: Opening socket");
     n2a_on_error (amqp_socket_open_noblock (socket, g_options.hostname, g_options.port, &timeout), "Opening socket");
