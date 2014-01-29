@@ -329,7 +329,7 @@ int n2a_event_downtime (int event_type __attribute__ ((__unused__)), void *data)
         xfree (key);
     }
 
-  return 0;
+    return 0;
 }
 
 int n2a_event_comment (int event_type __attribute__ ((__unused__)), void *data)

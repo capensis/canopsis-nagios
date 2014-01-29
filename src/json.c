@@ -572,6 +572,10 @@ int n2a_nebstruct_downtime_data_to_json (char **buffer, nebstruct_downtime_data 
     json_object_set (jdata, "fixed", item);
     json_decref (item);
 
+    item = json_integer (c->downtime_id);
+    json_object_set (jdata, "downtime_id", item);
+    json_decref (item);
+
     /* generate string */
     s = json_dumps (jdata, 0);
     l = xstrlen (s);
