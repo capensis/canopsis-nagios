@@ -386,7 +386,8 @@ int n2a_send_event (const char *routingkey, const char *message)
     {
         if (!n2a_amqp_publish (routingkey, message))
         {
-            return n2a_push (g_options.pFifo, n2a_event_init (routingkey, message));
+            n2a_push (g_options.pFifo, n2a_event_init (routingkey, message));
+            return -1;
         }
         else
         {

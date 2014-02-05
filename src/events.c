@@ -51,7 +51,8 @@ do                                                                              
                                                                                         \
         buffer = xmalloc (len + 1);                                                     \
         snprintf (buffer, len + 1, "%s", json);                                         \
-        n2a_send_event (key, buffer);                                                   \
+        if (n2a_send_event (key, buffer) < 0)                                           \
+            n2a_logger (LG_ERR, "Connexion failed for service %s on host %s", c->service_description, c->host_name); \
                                                                                         \
         xfree (buffer);                                                                 \
         xfree (json);                                                                   \
@@ -100,7 +101,8 @@ int n2a_event_service_check (int event_type __attribute__ ((__unused__)), void *
             buffer = xmalloc (message_size + 1);
 
             snprintf (buffer, message_size + 1, "%s", json);
-            n2a_send_event (key, buffer);
+            if (n2a_send_event (key, buffer) < 0)
+                n2a_logger (LG_ERR, "Connexion failed for service %s on host %s", c->service_description, c->host_name);
 
             xfree (buffer);
             xfree (json);
@@ -165,7 +167,8 @@ int n2a_event_host_check (int event_type __attribute__ ((__unused__)), void *dat
             key = realloc (key, strlen (key) + 1);
         }
 
-        n2a_send_event (key, buffer);
+        if (n2a_send_event (key, buffer) < 0)
+            n2a_logger (LG_ERR, "Connexion failed for host %s", c->host_name);
 
         xfree (buffer);
         xfree (key);
