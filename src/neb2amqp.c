@@ -163,10 +163,10 @@ bool n2a_amqp_connect (void)
 
     n2a_logger (LG_DEBUG, "AMQP: Init connection");
     conn = amqp_new_connection ();
-     
+
     n2a_logger (LG_DEBUG, "AMQP: Creating socket");
     socket = amqp_tcp_socket_new(conn);
- 
+
     n2a_logger (LG_DEBUG, "AMQP: Opening socket");
     n2a_on_error (amqp_socket_open_noblock (socket, g_options.hostname, g_options.port, &timeout), "Opening socket");
 
@@ -239,7 +239,7 @@ void n2a_fifo_check (void)
         if (flush == -1)
         {
             flush = (int) (g_options.cache_size / 5);
-      
+
             if (flush > 1000)
             {
                 flush = 1000;
@@ -306,7 +306,7 @@ bool n2a_amqp_check (void)
     {
         n2a_logger (LG_DEBUG, "AMQP: Re-connect to amqp ...");
         n2a_amqp_connect ();
-    }  
+    }
 
     return amqp_connected;
 }
@@ -314,7 +314,7 @@ bool n2a_amqp_check (void)
 void n2a_amqp_disconnect (void)
 {
     amqp_errors = false;
-  
+
     if (amqp_connected)
     {
         n2a_logger (LG_DEBUG, "AMQP: Closing channel");
@@ -332,9 +332,6 @@ void n2a_amqp_disconnect (void)
 
         n2a_logger (LG_DEBUG, "AMQP: Ending connection");
         n2a_on_error (amqp_destroy_connection (conn), "Ending connection");
-      
-        conn = NULL;
-        amqp_connected = false;
 
         n2a_logger (LG_INFO, "AMQP: Successfully disconnected");
     }
@@ -342,6 +339,9 @@ void n2a_amqp_disconnect (void)
     {
         n2a_logger (LG_INFO, "AMQP: Impossible to disconnect, not connected");
     }
+
+    conn = NULL;
+    amqp_connected = false;
 }
 
 bool n2a_amqp_publish (const char *routingkey, const char *message)
