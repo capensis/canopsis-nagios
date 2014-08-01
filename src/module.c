@@ -27,6 +27,8 @@
 
 NEB_API_VERSION (CURRENT_NEB_API_VERSION)
 
+char *versioncat = VERSIONCAT;
+
 static char *g_args = NULL;
 
 extern int event_broker_options;
