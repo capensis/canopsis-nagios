@@ -59,6 +59,7 @@ int n2a_nebstruct_service_check_data_to_json (
     int nbmsg = 1;
 
     service *service_object = c->object_ptr;
+    objectlist *hostgroups = NULL;
     objectlist *servicegroups = NULL;
 
     json_t *item = NULL;
@@ -88,6 +89,10 @@ int n2a_nebstruct_service_check_data_to_json (
 
     item = json_string (c->host_name);
     json_object_set (jdata, "component", item);
+    json_decref (item);
+
+    item = json_string (service_object->host_ptr->address);
+    json_object_set (jdata, "address", item);
     json_decref (item);
 
     item = json_string (c->service_description);
@@ -141,6 +146,27 @@ int n2a_nebstruct_service_check_data_to_json (
     item = json_string (c->command_name);
     json_object_set (jdata, "command_name", item);
     json_decref (item);
+
+    /* add hostgroups to event */
+    if (g_options.hostgroups)
+    {
+        item = json_array ();
+        json_object_set (jdata, "hostgroups", item);
+
+        for (hostgroups = service_object->host_ptr->hostgroups_ptr;
+             hostgroups != NULL;
+             hostgroups = hostgroups->next
+            )
+        {
+            hostgroup *group = hostgroups->object_ptr;
+
+            json_t *groupname = json_string (group->group_name);
+            json_array_append (item, groupname);
+            json_decref (groupname);
+        }
+
+        json_decref (item);
+    }
 
     /* add servicegroups to event */
     if (g_options.servicegroups)
@@ -247,6 +273,10 @@ int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_d
 
     item = json_string (c->host_name);
     json_object_set (jdata, "component", item);
+    json_decref (item);
+
+    item = json_string (host_object->address);
+    json_object_set (jdata, "address", item);
     json_decref (item);
 
     item = json_integer ((int) c->timestamp.tv_sec);

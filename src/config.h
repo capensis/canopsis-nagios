@@ -191,7 +191,7 @@
 #define TIME_WITH_SYS_TIME 1
 
 /* Version number of package */
-#define VERSION "0.4-fifo"
+#define VERSION "0.5-fifo"
 
 #define VERSIONCAT "VERSIONCAT-"VERSION
 
