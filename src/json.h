@@ -37,7 +37,7 @@ int n2a_nebstruct_service_check_data_to_json (
 );
 
 int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_data *c);
-
-int n2a_nebstruct_acknolegement_data_to_json (char **buffer, nebstruct_acknowledgement_data *c);
+int n2a_nebstruct_acknowlegement_data_to_json (char **buffer, nebstruct_acknowledgement_data *c);
+int n2a_nebstruct_downtime_data_to_json (char **buffer, nebstruct_downtime_data *c);
 
 #endif /* __CANONEB_JSON_H */

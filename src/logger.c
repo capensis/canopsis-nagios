@@ -28,24 +28,26 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include "xutils.h"
 
 extern struct options g_options;
 
-void
-n2a_logger (int priority, const char *loginfo, ...)
+void n2a_logger (int priority, const char *loginfo, ...)
 {
-  if (priority == 1 && g_options.log_level <= 0)
-  	return;
-  else
-  	priority = LG_INFO;
+    char *format = NULL;
+    char *buffer = NULL;
+    va_list ap;
 
-  char buffer[8192];
-  snprintf (buffer, 20, "neb2amqp: ");
+    if (priority != 1 || g_options.log_level > 0)
+    {
+        priority = LG_INFO;
+    }
 
-  va_list ap;
-  va_start (ap, loginfo);
-  vsnprintf (buffer + strlen (buffer), sizeof (buffer) - strlen (buffer),
-	     loginfo, ap);
-  va_end (ap);
-  write_to_all_logs (buffer, priority);
+    asprintf (&format, "neb2amqp: %s", loginfo);
+
+    va_start (ap, loginfo);
+    vasprintf (&buffer, format, ap);
+    va_end (ap);
+
+    write_to_all_logs (buffer, priority);
 }

@@ -44,7 +44,6 @@ static bool amqp_errors = false;
 /*static bool first = true;*/
 
 static int amqp_last_connect = 0;
-static int amqp_wait_time = 10;
 
 static int fifo_last_sync = 0;
 static int fifo_last_flush = 0;
@@ -302,7 +301,7 @@ bool n2a_amqp_check (void)
     timestamp = (int) now.tv_sec;
     elapsed = timestamp - amqp_last_connect;
 
-    if ((amqp_last_connect == 0) || (!amqp_connected && elapsed >= amqp_wait_time))
+    if ((amqp_last_connect == 0) || (!amqp_connected && elapsed >= g_options.amqp_wait_time))
     {
         n2a_logger (LG_DEBUG, "AMQP: Re-connect to amqp ...");
         n2a_amqp_connect ();
@@ -348,6 +347,11 @@ bool n2a_amqp_publish (const char *routingkey, const char *message)
 {
     amqp_basic_properties_t props;
     int result;
+
+    if (!n2a_amqp_check ())
+    {
+        return false;
+    }
 
     props._flags = AMQP_BASIC_CONTENT_TYPE_FLAG | AMQP_BASIC_DELIVERY_MODE_FLAG | AMQP_BASIC_CONTENT_ENCODING_FLAG;
     props.content_type = amqp_cstring_bytes ("application/json");

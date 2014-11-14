@@ -230,3 +230,39 @@ char *n2a_str_join (char *delim, ...)
 
     return ret;
 }
+
+int vasprintf (char **ret, const char *fmt, va_list args)
+{
+    va_list ap;
+    char c = 0;
+    int size = 0;
+
+    if (ret == NULL)
+    {
+        return -1;
+    }
+
+    va_copy (ap, args);
+    size = vsnprintf (&c, 1, fmt, args);
+    *ret = calloc (size + 1, 1);
+
+    if (!(*ret))
+    {
+        return -1;
+    }
+
+    size = vsprintf (*ret, fmt, ap);
+    return size;
+}
+
+int asprintf (char **ret, const char *fmt, ...)
+{
+    va_list args;
+    int sz = 0;
+
+    va_start (args, fmt);
+    sz = vasprintf (ret, fmt, args);
+    va_end (args);
+
+    return sz;
+}

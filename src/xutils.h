@@ -57,7 +57,8 @@ extern "C" {
 * @param a Value to compare
 * @param b Value to compare
 * @return Smallest value between a and b
-*/ int xmin(int a, int b);
+*/
+int xmin(int a, int b);
 
 /**
 * Returns the biggest value of the given parameters
@@ -129,5 +130,14 @@ size_t xstrlen(const char *src);
  */
 
 char *n2a_str_join (char *delim, ...);
+
+#include <stdarg.h>
+
+#ifndef va_copy
+#   define va_copy(d,s)      __va_copy(d,s)
+#endif
+
+int vasprintf (char **ret, const char *fmt, va_list args);
+int asprintf (char **ret, const char *fmt, ...);
 
 #endif                            // strutil_h

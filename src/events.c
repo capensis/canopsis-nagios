@@ -188,6 +188,8 @@ int n2a_event_process (int event_type __attribute__ ((__unused__)), void *data)
     struct nebstruct_process_struct *ps = (struct nebstruct_process_struct *) data;
 
     return 0;
+
+    (void) ps;
 }
 
 int n2a_event_program_status (int event_type __attribute__ ((__unused__)), void *data)
@@ -204,6 +206,8 @@ int n2a_event_program_status (int event_type __attribute__ ((__unused__)), void 
          * n2a_send_event (exchange_name, routingkey, buffer);
          */
         g_last_event_program_status = (int) ps->timestamp.tv_sec;
+
+        (void) buffer;
     }
 
     return 0;
@@ -220,7 +224,7 @@ int n2a_event_acknowledgement (int event_type __attribute__ ((__unused__)), void
         char *buffer = NULL;
         char *key = NULL;
 
-        n2a_logger (LG_DEBUG, "Event: event_acknowledgement ADD");
+        n2a_logger (LG_DEBUG, "Addind acknowledgement");
         printf ("ACK STATE: %d\n", c->state);
 
         if (c->acknowledgement_type == HOST_ACKNOWLEDGEMENT)
@@ -257,7 +261,7 @@ int n2a_event_acknowledgement (int event_type __attribute__ ((__unused__)), void
             key = realloc (key, strlen (key) + 1);
         }
 
-        n2a_nebstruct_acknolegement_data_to_json (&buffer, c);
+        n2a_nebstruct_acknowlegement_data_to_json (&buffer, c);
         n2a_send_event (key, buffer);
 
         xfree (buffer);
@@ -266,7 +270,7 @@ int n2a_event_acknowledgement (int event_type __attribute__ ((__unused__)), void
     else if (c->type == NEBTYPE_ACKNOWLEDGEMENT_REMOVE)
     {
         /* NOT IMPLEMENTED IN NAGIOS */
-        n2a_logger (LG_DEBUG, "Event: event_acknowledgement REMOVE");
+        n2a_logger (LG_DEBUG, "Removing acknowledgement");
     }
 
     return 0;
@@ -278,18 +282,18 @@ int n2a_event_downtime (int event_type __attribute__ ((__unused__)), void *data)
 
     if (c->type == NEBTYPE_DOWNTIME_START)
     {
-        n2a_logger (LG_DEBUG, "Event: event_downtime START");
+        n2a_logger (LG_DEBUG, "Start downtime");
     }
     else if (c->type == NEBTYPE_DOWNTIME_STOP)
     {
-        n2a_logger (LG_DEBUG, "Event: event_downtime STOP");
+        n2a_logger (LG_DEBUG, "Stop downtime");
     }
     else if (c->type == NEBTYPE_DOWNTIME_ADD)
     {
         char *buffer = NULL;
         char *key = NULL;
 
-        n2a_logger (LG_DEBUG, "Event: event_downtime ADD");
+        n2a_logger (LG_DEBUG, "Add downtime entry");
 
         if (c->downtime_type == HOST_DOWNTIME)
         {
@@ -341,11 +345,11 @@ int n2a_event_comment (int event_type __attribute__ ((__unused__)), void *data)
 
     if (c->type == NEBTYPE_COMMENT_ADD)
     {
-        n2a_logger (LG_DEBUG, "Event: event_comment ADD");
+        n2a_logger (LG_DEBUG, "Add comment");
     }
     else if (c->type == NEBTYPE_COMMENT_DELETE)
     {
-        n2a_logger (LG_DEBUG, "Event: event_comment DELETE");
+        n2a_logger (LG_DEBUG, "Delete comment");
     }
 
     if (c->type == NEBTYPE_COMMENT_ADD || c->type == NEBTYPE_COMMENT_DELETE)
@@ -356,6 +360,8 @@ int n2a_event_comment (int event_type __attribute__ ((__unused__)), void *data)
          * nebstruct_comment_data_to_json (buffer, c);
          * n2a_send_event (exchange_name, routingkey, buffer);
          */
+
+        (void) buffer;
     }
 
     return 0;

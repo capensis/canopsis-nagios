@@ -31,9 +31,7 @@ fifo *n2a_fifo_init (int max_size, char *file_path)
     fifo *pFifo = NULL;
     int loaded = 0;
 
-    n2a_logger (LG_DEBUG, "FIFO: Init");
-    n2a_logger (LG_DEBUG, "FIFO:  + max_size:  %d", max_size);
-    n2a_logger (LG_DEBUG, "FIFO:  + file_path: %s", file_path);
+    n2a_logger (LG_DEBUG, "Initialize FIFO: %s (maximum size: %d", file_path, max_size);
 
     pFifo = malloc (sizeof (fifo));
 

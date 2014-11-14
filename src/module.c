@@ -74,6 +74,8 @@ int nebmodule_init (
     g_options.servicegroups = FALSE;
     g_options.custom_variables = FALSE;
 
+    g_options.amqp_wait_time = 10;
+
     /* Parse module options */
     n2a_parse_arguments (args);
 
@@ -247,6 +249,14 @@ static void n2a_parse_arguments (const char *args_orig)
                     g_options.max_size
                 );
             }
+            else if (strcmp (left, "amqp_wait_time") == 0)
+            {
+                g_options.amqp_wait_time = strtol (right, NULL, 10);
+
+                n2a_logger (LG_DEBUG, "Setting amqp_wait_time buffer to %d seconds",
+                    g_options.amqp_wait_time
+                );
+            }
             else if (strcmp (left, "autoflush") == 0)
             {
                 g_options.autoflush = strtol (right, NULL, 10);
@@ -357,31 +367,31 @@ static void n2a_parse_arguments (const char *args_orig)
             {
                 g_options.hostgroups = strtol (right, NULL, 2);
 
-                n2a_logger (LG_ERR, "Setting hostgroups to '%s'", g_options.hostgroups ? "true": "false");
+                n2a_logger (LG_DEBUG, "Setting hostgroups to '%s'", g_options.hostgroups ? "true": "false");
             }
             else if (strcmp (left, "servicegroups") == 0)
             {
                 g_options.servicegroups = strtol (right, NULL, 2);
 
-                n2a_logger (LG_ERR, "Setting servicegroups to '%s'", g_options.servicegroups ? "true": "false");
+                n2a_logger (LG_DEBUG, "Setting servicegroups to '%s'", g_options.servicegroups ? "true": "false");
             }
             else if (strcmp (left, "acknowledgement") == 0)
             {
                 g_options.acknowledgement = strtol (right, NULL, 2);
 
-                n2a_logger (LG_ERR, "Setting acknowledgement to '%s'", g_options.acknowledgement ? "true": "false");
+                n2a_logger (LG_DEBUG, "Setting acknowledgement to '%s'", g_options.acknowledgement ? "true": "false");
             }
             else if (strcmp (left, "downtime") == 0)
             {
                 g_options.downtime = strtol (right, NULL, 2);
 
-                n2a_logger (LG_ERR, "Setting downtime to '%s'", g_options.downtime ? "true": "false");
+                n2a_logger (LG_DEBUG, "Setting downtime to '%s'", g_options.downtime ? "true": "false");
             }
             else if (strcmp (left, "custom_variables") == 0)
             {
                 g_options.custom_variables = strtol (right, NULL, 2);
 
-                n2a_logger (LG_ERR, "Setting custom_variables to '%s'", g_options.custom_variables ? "true": "false");
+                n2a_logger (LG_DEBUG, "Setting custom_variables to '%s'", g_options.custom_variables ? "true": "false");
             }
             else
             {

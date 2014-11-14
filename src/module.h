@@ -64,6 +64,8 @@ struct options
     int downtime;
     int custom_variables;
 
+    int amqp_wait_time;
+
 	int log_level;
 	
 	nebmodule *nagios_handle;
