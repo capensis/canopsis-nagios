@@ -393,6 +393,12 @@ static void n2a_parse_arguments (const char *args_orig)
 
                 n2a_logger (LG_DEBUG, "Setting custom_variables to '%s'", g_options.custom_variables ? "true": "false");
             }
+            else if (strcmp (left, "urls") == 0)
+            {
+                g_options.urls = strtol (right, NULL, 2);
+
+                n2a_logger (LG_DEBUG, "Setting urls to '%s'", g_options.urls ? "true": "false");
+            }
             else
             {
                 n2a_logger (LG_ERR, "Ignoring invalid option %s=%s", left, right);

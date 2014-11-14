@@ -180,6 +180,21 @@ int n2a_str_maxsize (void *option, void *userdata)
     return (length <= xstrlen (string));
 }
 
+void n2a_nebstruct_add_urls (json_t *jdata, char *action_url, char *notes_url)
+{
+    if (g_options.urls)
+    {
+        struct event_options_t options[] =
+        {
+            {"action_url", &(action_url), json_string},
+            {"notes_url",  &(notes_url),  json_string},
+            {NULL, NULL, NULL}
+        };
+
+        n2a_add_options_to_event (options, jdata, NULL, NULL);
+    }
+}
+
 int n2a_nebstruct_service_check_data_to_json (
         nebstruct_service_check_data *c,
         json_t **pdata,
@@ -209,8 +224,6 @@ int n2a_nebstruct_service_check_data_to_json (
         {"source_type",     &(source_type),                json_string},
         {"component",       &(c->host_name),               json_string},
         {"address",         &(host_object->address),       json_string},
-        {"notes_url",       &(service_object->notes_url),  json_string},
-        {"action_url",      &(service_object->action_url), json_string},
         {"timestamp",       &(c->timestamp.tv_sec),        json_integer},
         {"state",           &(cstate),                     json_integer},
         {"state_type",      &(c->state_type),              json_integer},
@@ -229,6 +242,7 @@ int n2a_nebstruct_service_check_data_to_json (
     n2a_nebstruct_add_hostgroups (jdata, host_object);
     n2a_nebstruct_add_servicegroups (jdata, service_object);
     n2a_nebstruct_add_custom_variables (jdata, service_object->custom_variables);
+    n2a_nebstruct_add_urls (jdata, service_object->action_url, service_object->notes_url);
 
     /* now stringify JSON */
 
@@ -290,8 +304,6 @@ int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_d
         {"source_type",     &(source_type),                json_string},
         {"component",       &(c->host_name),               json_string},
         {"address",         &(host_object->address),       json_string},
-        {"notes_url",       &(host_object->notes_url),     json_string},
-        {"action_url",      &(host_object->action_url),    json_string},
         {"timestamp",       &(c->timestamp.tv_sec),        json_integer},
         {"state",           &(cstate),                     json_integer},
         {"state_type",      &(c->state_type),              json_integer},
@@ -307,6 +319,7 @@ int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_d
     n2a_add_options_to_event (options, jdata, NULL, NULL);
     n2a_nebstruct_add_hostgroups (jdata, host_object);
     n2a_nebstruct_add_custom_variables (jdata, host_object->custom_variables);
+    n2a_nebstruct_add_urls (jdata, host_object->action_url, host_object->notes_url);
 
     /* now stringify JSON */
 

@@ -72,6 +72,7 @@ Options:
     acknowledgement =   If 1, handle acknowledgement events (default: 0)
     downtime =          If 1, handle downtime events (default: 0)
     custom_variables =  If 1, add Nagios macros to event (default: 0)
+    urls =              If 1, add action_url and notes_url to event (default: 0)
 
     amqp_wait_time =    Number of seconds before a reconnection to AMQP
 

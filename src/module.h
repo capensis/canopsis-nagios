@@ -63,6 +63,7 @@ struct options
     int acknowledgement;
     int downtime;
     int custom_variables;
+    int urls;
 
     int amqp_wait_time;
 
