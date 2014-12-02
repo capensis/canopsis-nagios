@@ -223,6 +223,7 @@ int n2a_nebstruct_service_check_data_to_json (
         {"event_type",      &(event_type),                 json_string},
         {"source_type",     &(source_type),                json_string},
         {"component",       &(c->host_name),               json_string},
+        {"resource",        &(c->service_description),     json_string},
         {"address",         &(host_object->address),       json_string},
         {"timestamp",       &(c->timestamp.tv_sec),        json_integer},
         {"state",           &(cstate),                     json_integer},
