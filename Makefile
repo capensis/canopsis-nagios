@@ -50,6 +50,8 @@ OBJS_JSON = $(SRCS_JSON:.c=.o)
 OBJS_RMQ  = $(SRC_RMQ:.c=.o)
 
 default:    libjansson.a librabbitmq.a neb2amqp.o
+4x:         libjansson.a librabbitmq.a neb2amqp-4x.o
+all:        default 4x
 
 libjansson.a: $(OBJS_JSON)
 	@($(AR) $(ARFLAGS) libjansson.a $(OBJS_JSON))
@@ -59,6 +61,10 @@ librabbitmq.a: $(OBJS_RMQ)
 
 neb2amqp.o: $(SRC_N2A) libjansson.a librabbitmq.a
 	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $^
+	@($(ECHO) "\n$@ compiled successfuly!")
+
+neb2amqp-4x.o: $(SRC_N2A) libjansson.a librabbitmq.a
+	$(CC) $(INCLUDES) $(CFLAGS) -o $@ $^ -DBUILD_NAGIOS_4X
 	@($(ECHO) "\n$@ compiled successfuly!")
 
 debug: $(SRC_N2A) libjansson.a librabbitmq.a
@@ -72,4 +78,4 @@ simu: neb2amqp.o
 	$(CC) $(INCLUDES) -g -o $@ test/$@.c -ldl -Wall -rdynamic $^
 
 clean:
-	$(RM) $(OBJS_JSON) $(OBJS_RMQ) libjansson.a librabbitmq.a neb2amqp.o fifo-bench simu
+	$(RM) $(OBJS_JSON) $(OBJS_RMQ) libjansson.a librabbitmq.a neb2amqp.o neb2amqp-4x.o fifo-bench simu

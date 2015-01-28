@@ -28,12 +28,21 @@
 #include "config.h"
 
 #define NSCORE
+#ifdef BUILD_NAGIOS_4X
+#include "nagios-4x/objects.h"
+#include "nagios-4x/nagios.h"
+#include "nagios-4x/nebstructs.h"
+#include "nagios-4x/broker.h"
+#include "nagios-4x/nebmodules.h"
+#include "nagios-4x/nebcallbacks.h"
+#else
 #include "nagios/objects.h"
 #include "nagios/nagios.h"
 #include "nagios/nebstructs.h"
 #include "nagios/broker.h"
 #include "nagios/nebmodules.h"
 #include "nagios/nebcallbacks.h"
+#endif
 
 #endif // nagios_h
 

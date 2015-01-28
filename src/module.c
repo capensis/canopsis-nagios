@@ -17,6 +17,8 @@
  * along with Canopsis.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <string.h>
+
 #include "nagios.h"
 #include "logger.h"
 #include "xutils.h"
@@ -31,7 +33,9 @@ char *versioncat = VERSIONCAT;
 
 static char *g_args = NULL;
 
+#ifndef BUILD_NAGIOS_4X
 extern int event_broker_options;
+#endif
 
 struct options g_options;
 

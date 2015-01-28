@@ -22,7 +22,9 @@
 #include "logger.h"
 #include "events.h"
 
+#ifndef BUILD_NAGIOS_4X
 extern int event_broker_options;
+#endif
 extern struct options g_options;
 
 int n2a_verify_event_broker_options (void)
