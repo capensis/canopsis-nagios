@@ -27,6 +27,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <limits.h>
+#include <stdio.h>
 
 #include "xutils.h"
 
