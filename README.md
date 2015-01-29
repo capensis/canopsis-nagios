@@ -12,6 +12,24 @@ Redhat like (Centos ..):
     yum groupinstall "Development Tools"
     yum install git-core
 
+## Nagios 4.x ##
+
+Support of Nagios 4.x is **experimental**, please feel free to report any issue
+in our [bugtracker](https://github.com/capensis/canopsis-nagios/issues).
+
+In order to build a nagios 4.x compatible neb, you need to run the following
+commands:
+
+    git clone https://github.com/capensis/canopsis-nagios.git
+    cd canopsis-nagios
+    git checkout 4.x
+    make 4x
+
+At the end of the process, you should have a `neb2amqp-4x.o` file.
+You may want to copy this file with your other brokers:
+
+    sudo cp neb2amqp-4x.o /usr/local/nagios/bin/neb2amqp.o
+
 
 ## Download and Build ##
 
