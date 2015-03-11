@@ -215,7 +215,7 @@ int n2a_nebstruct_service_check_data_to_json (
     char *event_type = "check";
     char *source_type = "resource";
 
-    int cstate = (c->state >= 1 ? 2 : c->state);
+    int cstate = (c->state > 1 ? 2 : c->state);
 
     struct event_options_t options[] = {
         {"connector",       &(g_options.connector),        json_string},
@@ -296,7 +296,7 @@ int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_d
     char *event_type = "check";
     char *source_type = "component";
 
-    int cstate = (c->state >= 1 ? 2 : c->state);
+    int cstate = (c->state > 1 ? 2 : c->state);
 
     struct event_options_t options[] = {
         {"connector",       &(g_options.connector),        json_string},
