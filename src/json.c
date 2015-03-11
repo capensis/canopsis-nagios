@@ -215,8 +215,6 @@ int n2a_nebstruct_service_check_data_to_json (
     char *event_type = "check";
     char *source_type = "resource";
 
-    int cstate = (c->state > 1 ? 2 : c->state);
-
     struct event_options_t options[] = {
         {"connector",       &(g_options.connector),        json_string},
         {"connector_name",  &(g_options.eventsource_name), json_string},
@@ -226,7 +224,7 @@ int n2a_nebstruct_service_check_data_to_json (
         {"resource",        &(c->service_description),     json_string},
         {"address",         &(host_object->address),       json_string},
         {"timestamp",       &(c->timestamp.tv_sec),        json_integer},
-        {"state",           &(cstate),                     json_integer},
+        {"state",           &(c->state),                   json_integer},
         {"state_type",      &(c->state_type),              json_integer},
         {"check_type",      &(c->check_type),              json_integer},
         {"current_attempt", &(c->current_attempt),         json_integer},
@@ -296,8 +294,6 @@ int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_d
     char *event_type = "check";
     char *source_type = "component";
 
-    int cstate = (c->state > 1 ? 2 : c->state);
-
     struct event_options_t options[] = {
         {"connector",       &(g_options.connector),        json_string},
         {"connector_name",  &(g_options.eventsource_name), json_string},
@@ -306,7 +302,7 @@ int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_d
         {"component",       &(c->host_name),               json_string},
         {"address",         &(host_object->address),       json_string},
         {"timestamp",       &(c->timestamp.tv_sec),        json_integer},
-        {"state",           &(cstate),                     json_integer},
+        {"state",           &(c->state),                   json_integer},
         {"state_type",      &(c->state_type),              json_integer},
         {"check_type",      &(c->check_type),              json_integer},
         {"current_attempt", &(c->current_attempt),         json_integer},
