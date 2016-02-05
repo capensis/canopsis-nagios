@@ -17,12 +17,14 @@
  * along with Canopsis.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
 #include <iconv.h>
+#include <errno.h>
 
 #include "utf8.h"
 #include "xutils.h"
 
-static char *encodings = {
+static const char *encodings[] = {
     "ASCII",
     "ISO-8859-1",
     "ISO-8859-2",

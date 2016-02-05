@@ -20,6 +20,6 @@
 #ifndef __CANONEB_UTF8_H
 #define __CANONEB_UTF8_H
 
-char *ensure_unicode (char *source, size_t len)
+char *ensure_unicode (char *source, size_t len);
 
 #endif /* __CANONEB_UTF8_H */

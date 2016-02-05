@@ -40,7 +40,7 @@ struct event_options_t
 json_t *json_utf8_string (char *data)
 {
     char *converted = ensure_unicode (data, xstrlen (data));
-    return json_string (data);
+    return json_string (converted);
 }
 
 void n2a_nebstruct_service_check_data_update_json (
