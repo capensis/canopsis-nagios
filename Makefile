@@ -23,7 +23,7 @@
 
 CC     = gcc
 
-CFLAGS = -fPIC -shared -Wall -g -lrt
+CFLAGS = -fPIC -shared -Wall -g -lrt -liconv
 
 INCLUDES = -Ilib/jansson-2.3.1/src/ -Ilib/librabbitmq/ -Ilib/ -Isrc/
 
