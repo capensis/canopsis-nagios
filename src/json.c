@@ -53,7 +53,7 @@ void n2a_nebstruct_service_check_data_update_json (
     snprintf (temp, size, "%s", message + offset);
 
     json_object_del (jdata, field);
-    item = json_string (temp);
+    item = json_string_nocheck (temp);
     json_object_set (jdata, field, item);
     json_decref (item);
 }
@@ -75,7 +75,7 @@ void n2a_nebstruct_add_hostgroups (json_t *jdata, host *host_object)
         {
             hostgroup *group = hostgroups->object_ptr;
 
-            json_t *groupname = json_string (group->group_name);
+            json_t *groupname = json_string_nocheck (group->group_name);
             json_array_append (item, groupname);
             json_decref (groupname);
         }
@@ -101,7 +101,7 @@ void n2a_nebstruct_add_servicegroups (json_t *jdata, service *service_object)
         {
             servicegroup *group = servicegroups->object_ptr;
 
-            json_t *groupname = json_string (group->group_name);
+            json_t *groupname = json_string_nocheck (group->group_name);
             json_array_append (item, groupname);
             json_decref (groupname);
         }
@@ -119,7 +119,7 @@ void n2a_nebstruct_add_custom_variables (json_t *jdata, customvariablesmember *c
 
         for (cvar = cvars; cvar != NULL; cvar = cvar->next)
         {
-            json_t *item = json_string (cvar->variable_value);
+            json_t *item = json_string_nocheck (cvar->variable_value);
             json_object_set (jdata, cvar->variable_name, item);
             json_decref (item);
         }
@@ -135,11 +135,11 @@ json_t *n2a_string_to_truncated_json (char *string)
 {
     if (xstrlen (string) > g_options.max_size)
     {
-        return json_string ("");
+        return json_string_nocheck ("");
     }
     else
     {
-        return json_string (string);
+        return json_string_nocheck (string);
     }
 }
 
@@ -153,9 +153,13 @@ void n2a_add_options_to_event (struct event_options_t *options, json_t *jdata, i
 
         if (cmp == NULL || cmp (options[i].option, userdata))
         {
-            if (options[i].callback == json_string)
+            if (options[i].callback == json_string_nocheck)
             {
-                item = json_string (*((char **) options[i].option));
+                item = json_string_nocheck (*((char **) options[i].option));
+            }
+            else if (options[i].callback == n2a_string_to_truncated_json)
+            {
+                item = n2a_string_to_truncated_json (*((char **) options[i].option));
             }
             else if (options[i].callback == json_integer)
             {
@@ -164,6 +168,10 @@ void n2a_add_options_to_event (struct event_options_t *options, json_t *jdata, i
             else if (options[i].callback == json_real)
             {
                 item = json_real (*((double *) options[i].option));
+            }
+            else if (options[i].callback == n2a_bool_to_json)
+            {
+                item = n2a_bool_to_json (*((int *) options[i].option));
             }
 
             json_object_set (jdata, options[i].name, item);
@@ -186,8 +194,8 @@ void n2a_nebstruct_add_urls (json_t *jdata, char *action_url, char *notes_url)
     {
         struct event_options_t options[] =
         {
-            {"action_url", &(action_url), json_string},
-            {"notes_url",  &(notes_url),  json_string},
+            {"action_url", &(action_url), json_string_nocheck},
+            {"notes_url",  &(notes_url),  json_string_nocheck},
             {NULL, NULL, NULL}
         };
 
@@ -216,13 +224,13 @@ int n2a_nebstruct_service_check_data_to_json (
     char *source_type = "resource";
 
     struct event_options_t options[] = {
-        {"connector",       &(g_options.connector),        json_string},
-        {"connector_name",  &(g_options.eventsource_name), json_string},
-        {"event_type",      &(event_type),                 json_string},
-        {"source_type",     &(source_type),                json_string},
-        {"component",       &(c->host_name),               json_string},
-        {"resource",        &(c->service_description),     json_string},
-        {"address",         &(host_object->address),       json_string},
+        {"connector",       &(g_options.connector),        json_string_nocheck},
+        {"connector_name",  &(g_options.eventsource_name), json_string_nocheck},
+        {"event_type",      &(event_type),                 json_string_nocheck},
+        {"source_type",     &(source_type),                json_string_nocheck},
+        {"component",       &(c->host_name),               json_string_nocheck},
+        {"resource",        &(c->service_description),     json_string_nocheck},
+        {"address",         &(host_object->address),       json_string_nocheck},
         {"timestamp",       &(c->timestamp.tv_sec),        json_integer},
         {"state",           &(c->state),                   json_integer},
         {"state_type",      &(c->state_type),              json_integer},
@@ -231,7 +239,7 @@ int n2a_nebstruct_service_check_data_to_json (
         {"max_attempts",    &(c->max_attempts),            json_integer},
         {"execution_time",  &(c->execution_time),          json_real},
         {"latency",         &(c->latency),                 json_real},
-        {"command_name",    &(c->command_name),            json_string},
+        {"command_name",    &(c->command_name),            json_string_nocheck},
         {NULL, NULL, NULL}
     };
 
@@ -261,9 +269,9 @@ int n2a_nebstruct_service_check_data_to_json (
     else
     {
         struct event_options_t additionals[] = {
-            {"output",      &(c->output),      json_string},
-            {"long_output", &(c->long_output), json_string},
-            {"perf_data",   &(c->perf_data),   json_string},
+            {"output",      &(c->output),      json_string_nocheck},
+            {"long_output", &(c->long_output), json_string_nocheck},
+            {"perf_data",   &(c->perf_data),   json_string_nocheck},
             {NULL, NULL, NULL}
         };
 
@@ -295,12 +303,12 @@ int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_d
     char *source_type = "component";
 
     struct event_options_t options[] = {
-        {"connector",       &(g_options.connector),        json_string},
-        {"connector_name",  &(g_options.eventsource_name), json_string},
-        {"event_type",      &(event_type),                 json_string},
-        {"source_type",     &(source_type),                json_string},
-        {"component",       &(c->host_name),               json_string},
-        {"address",         &(host_object->address),       json_string},
+        {"connector",       &(g_options.connector),        json_string_nocheck},
+        {"connector_name",  &(g_options.eventsource_name), json_string_nocheck},
+        {"event_type",      &(event_type),                 json_string_nocheck},
+        {"source_type",     &(source_type),                json_string_nocheck},
+        {"component",       &(c->host_name),               json_string_nocheck},
+        {"address",         &(host_object->address),       json_string_nocheck},
         {"timestamp",       &(c->timestamp.tv_sec),        json_integer},
         {"state",           &(c->state),                   json_integer},
         {"state_type",      &(c->state_type),              json_integer},
@@ -309,7 +317,14 @@ int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_d
         {"max_attempts",    &(c->max_attempts),            json_integer},
         {"execution_time",  &(c->execution_time),          json_real},
         {"latency",         &(c->latency),                 json_real},
-        {"command_name",    &(c->command_name),            json_string},
+        {"command_name",    &(c->command_name),            json_string_nocheck},
+        {NULL, NULL, NULL}
+    };
+
+    struct event_options_t additionals[] = {
+        {"output",      &(c->output),      json_string_nocheck},
+        {"long_output", &(c->long_output), json_string_nocheck},
+        {"perf_data",   &(c->perf_data),   json_string_nocheck},
         {NULL, NULL, NULL}
     };
 
@@ -326,18 +341,15 @@ int n2a_nebstruct_host_check_data_to_json (char **buffer, nebstruct_host_check_d
     if ((int) ref > g_options.max_size)
     {
         size_t save = ref - g_options.max_size;
-        struct event_options_t additionals[] = {
-            {"output",      &(c->output),      json_string},
-            {"long_output", &(c->long_output), json_string},
-            {"perf_data",   &(c->perf_data),   json_string},
-            {NULL, NULL, NULL}
-        };
-
         n2a_add_options_to_event (additionals, jdata, n2a_str_maxsize, &save);
-
-        xfree (json);
-        json = json_dumps (jdata, 0);
     }
+    else
+    {
+        n2a_add_options_to_event (additionals, jdata, NULL, NULL);
+    }
+
+    xfree (json);
+    json = json_dumps (jdata, 0);
 
     ref = xstrlen (json);
     *buffer = xmalloc (ref + 1);
@@ -396,15 +408,15 @@ int n2a_nebstruct_acknowlegement_data_to_json (char **buffer, nebstruct_acknowle
     int cstate_type = 1;
 
     struct event_options_t options[] = {
-        {"connector",      &(g_options.connector),        json_string},
-        {"connector_name", &(g_options.eventsource_name), json_string},
-        {"event_type",     &(event_type),                 json_string},
-        {"source_type",    &(source_type),                json_string},
-        {"component",      &(c->host_name),               json_string},
-        {"resource",       &(c->service_description),     json_string},
-        {"referer",        &(ref_rk),                     json_string},
-        {"ref_rk",         &(ref_rk),                     json_string},
-        {"author",         &(c->author_name),             json_string},
+        {"connector",      &(g_options.connector),        json_string_nocheck},
+        {"connector_name", &(g_options.eventsource_name), json_string_nocheck},
+        {"event_type",     &(event_type),                 json_string_nocheck},
+        {"source_type",    &(source_type),                json_string_nocheck},
+        {"component",      &(c->host_name),               json_string_nocheck},
+        {"resource",       &(c->service_description),     json_string_nocheck},
+        {"referer",        &(ref_rk),                     json_string_nocheck},
+        {"ref_rk",         &(ref_rk),                     json_string_nocheck},
+        {"author",         &(c->author_name),             json_string_nocheck},
         {"state",          &(c->state),                   json_integer},
         {"state_type",     &(cstate_type),                json_integer},
         {"timestamp",      &(c->timestamp.tv_sec),        json_integer},
@@ -449,13 +461,13 @@ int n2a_nebstruct_downtime_data_to_json (char **buffer, nebstruct_downtime_data 
     }
 
     struct event_options_t options[] = {
-        {"connector",      &(g_options.connector),        json_string},
-        {"connector_name", &(g_options.eventsource_name), json_string},
-        {"event_type",     &(event_type),                 json_string},
-        {"source_type",    &(source_type),                json_string},
-        {"component",      &(c->host_name),               json_string},
-        {"resource",       &(c->service_description),     json_string},
-        {"author",         &(c->author_name),             json_string},
+        {"connector",      &(g_options.connector),        json_string_nocheck},
+        {"connector_name", &(g_options.eventsource_name), json_string_nocheck},
+        {"event_type",     &(event_type),                 json_string_nocheck},
+        {"source_type",    &(source_type),                json_string_nocheck},
+        {"component",      &(c->host_name),               json_string_nocheck},
+        {"resource",       &(c->service_description),     json_string_nocheck},
+        {"author",         &(c->author_name),             json_string_nocheck},
         {"timestamp",      &(c->timestamp.tv_sec),        json_integer},
         {"output",         &(c->comment_data),            n2a_string_to_truncated_json},
         {"start",          &(c->start_time),              json_integer},
